@@ -1,4 +1,4 @@
-package com.example.quanlynhansu;
+package com.main;
 
 import javafx.application.Application;
 import javafx.fxml.FXMLLoader;

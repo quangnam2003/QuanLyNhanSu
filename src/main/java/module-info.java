@@ -10,6 +10,6 @@ module com.example.quanlynhansu {
     requires org.kordamp.bootstrapfx.core;
     requires com.almasb.fxgl.all;
 
-    opens com.example.quanlynhansu to javafx.fxml;
-    exports com.example.quanlynhansu;
+    opens com.main to javafx.fxml;
+    exports com.main;
 }
