@@ -1,0 +1,44 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.scene.image.ImageView?>
+<?import javafx.scene.control.*?>
+<?import javafx.scene.layout.*?>
+
+<BorderPane xmlns="http://javafx.com/javafx"
+            xmlns:fx="http://javafx.com/fxml"
+            fx:controller="com.controller.MainController"
+            styleClass="root"
+            stylesheets="@sidebar.css">
+
+    <!-- Sidebar trái -->
+    <left>
+        <VBox fx:id="sidebar"
+              prefWidth="220"
+              spacing="0"
+              alignment="TOP_CENTER"
+              styleClass="sidebar">
+
+            <!-- Logo + Slogan -->
+            <VBox alignment="CENTER" spacing="5" styleClass="logo-section">
+                <Label text="HR SYSTEM"
+                       styleClass="logo-title" />
+                <Label text="Quản lý nhân sự hiện đại"
+                       styleClass="logo-subtitle" />
+            </VBox>
+
+            <!-- Menu -->
+            <Button fx:id="dashboardBtn" text="Dashboard" onAction="#handleMenu" styleClass="nav-button,active"/>
+            <Button fx:id="employeeBtn" text="Nhân viên" onAction="#handleMenu" styleClass="nav-button"/>
+            <Button fx:id="organizationBtn" text="Tổ chức" onAction="#handleMenu" styleClass="nav-button"/>
+            <Button fx:id="contractBtn" text="Hợp đồng" onAction="#handleMenu" styleClass="nav-button"/>
+            <Button fx:id="reportBtn" text="Báo cáo" onAction="#handleMenu" styleClass="nav-button"/>
+            <Button fx:id="settingsBtn" text="Cài đặt" onAction="#handleMenu" styleClass="nav-button"/>
+        </VBox>
+    </left>
+
+    <!-- Nội dung chính -->
+    <center>
+        <StackPane fx:id="contentArea" styleClass="content-area" />
+    </center>
+
+</BorderPane>

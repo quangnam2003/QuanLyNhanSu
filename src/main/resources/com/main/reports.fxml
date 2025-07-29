@@ -1,0 +1,93 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.scene.control.*?>
+<?import javafx.scene.layout.*?>
+
+<ScrollPane xmlns="http://javafx.com/javafx"
+            xmlns:fx="http://javafx.com/fxml"
+            fitToWidth="true"
+            fitToHeight="true"
+            stylesheets="@sidebar.css">
+
+    <VBox styleClass="page-container" spacing="20">
+        
+        <!-- Header -->
+        <HBox alignment="CENTER_LEFT" spacing="20">
+            <Label text="Báo cáo và Thống kê" styleClass="page-title"/>
+            <Region HBox.hgrow="ALWAYS"/>
+            <Button text="📊 Tạo báo cáo" 
+                    style="-fx-background-color: #9b59b6; -fx-text-fill: white; -fx-padding: 10 20; -fx-background-radius: 5;"/>
+        </HBox>
+
+        <!-- Report Cards -->
+        <GridPane hgap="20" vgap="20">
+            <!-- Row 1 -->
+            <VBox GridPane.columnIndex="0" GridPane.rowIndex="0" spacing="10" style="-fx-background-color: white; -fx-padding: 20; -fx-background-radius: 8; -fx-effect: dropshadow(three-pass-box, rgba(0,0,0,0.1), 10, 0, 0, 2); -fx-pref-width: 250;">
+                <Label text="📈" style="-fx-font-size: 24px;"/>
+                <Label text="Báo cáo nhân sự" style="-fx-font-size: 16px; -fx-font-weight: bold; -fx-text-fill: #2c3e50;"/>
+                <Label text="Thống kê tổng quan về nhân viên theo phòng ban, chức vụ" style="-fx-font-size: 12px; -fx-text-fill: #7f8c8d; -fx-wrap-text: true;"/>
+                <Button text="Xem báo cáo" style="-fx-background-color: #3498db; -fx-text-fill: white; -fx-padding: 8 15; -fx-background-radius: 5;"/>
+            </VBox>
+            
+            <VBox GridPane.columnIndex="1" GridPane.rowIndex="0" spacing="10" style="-fx-background-color: white; -fx-padding: 20; -fx-background-radius: 8; -fx-effect: dropshadow(three-pass-box, rgba(0,0,0,0.1), 10, 0, 0, 2); -fx-pref-width: 250;">
+                <Label text="💰" style="-fx-font-size: 24px;"/>
+                <Label text="Báo cáo lương" style="-fx-font-size: 16px; -fx-font-weight: bold; -fx-text-fill: #2c3e50;"/>
+                <Label text="Chi tiết về lương, thưởng và các khoản phụ cấp" style="-fx-font-size: 12px; -fx-text-fill: #7f8c8d; -fx-wrap-text: true;"/>
+                <Button text="Xem báo cáo" style="-fx-background-color: #27ae60; -fx-text-fill: white; -fx-padding: 8 15; -fx-background-radius: 5;"/>
+            </VBox>
+            
+            <VBox GridPane.columnIndex="2" GridPane.rowIndex="0" spacing="10" style="-fx-background-color: white; -fx-padding: 20; -fx-background-radius: 8; -fx-effect: dropshadow(three-pass-box, rgba(0,0,0,0.1), 10, 0, 0, 2); -fx-pref-width: 250;">
+                <Label text="📋" style="-fx-font-size: 24px;"/>
+                <Label text="Báo cáo chấm công" style="-fx-font-size: 16px; -fx-font-weight: bold; -fx-text-fill: #2c3e50;"/>
+                <Label text="Thống kê giờ làm việc, nghỉ phép, tăng ca" style="-fx-font-size: 12px; -fx-text-fill: #7f8c8d; -fx-wrap-text: true;"/>
+                <Button text="Xem báo cáo" style="-fx-background-color: #f39c12; -fx-text-fill: white; -fx-padding: 8 15; -fx-background-radius: 5;"/>
+            </VBox>
+            
+            <!-- Row 2 -->
+            <VBox GridPane.columnIndex="0" GridPane.rowIndex="1" spacing="10" style="-fx-background-color: white; -fx-padding: 20; -fx-background-radius: 8; -fx-effect: dropshadow(three-pass-box, rgba(0,0,0,0.1), 10, 0, 0, 2); -fx-pref-width: 250;">
+                <Label text="📄" style="-fx-font-size: 24px;"/>
+                <Label text="Báo cáo hợp đồng" style="-fx-font-size: 16px; -fx-font-weight: bold; -fx-text-fill: #2c3e50;"/>
+                <Label text="Tình trạng hợp đồng, gia hạn, thanh lý" style="-fx-font-size: 12px; -fx-text-fill: #7f8c8d; -fx-wrap-text: true;"/>
+                <Button text="Xem báo cáo" style="-fx-background-color: #e74c3c; -fx-text-fill: white; -fx-padding: 8 15; -fx-background-radius: 5;"/>
+            </VBox>
+            
+            <VBox GridPane.columnIndex="1" GridPane.rowIndex="1" spacing="10" style="-fx-background-color: white; -fx-padding: 20; -fx-background-radius: 8; -fx-effect: dropshadow(three-pass-box, rgba(0,0,0,0.1), 10, 0, 0, 2); -fx-pref-width: 250;">
+                <Label text="🎯" style="-fx-font-size: 24px;"/>
+                <Label text="Báo cáo KPI" style="-fx-font-size: 16px; -fx-font-weight: bold; -fx-text-fill: #2c3e50;"/>
+                <Label text="Đánh giá hiệu suất làm việc của nhân viên" style="-fx-font-size: 12px; -fx-text-fill: #7f8c8d; -fx-wrap-text: true;"/>
+                <Button text="Xem báo cáo" style="-fx-background-color: #9b59b6; -fx-text-fill: white; -fx-padding: 8 15; -fx-background-radius: 5;"/>
+            </VBox>
+            
+            <VBox GridPane.columnIndex="2" GridPane.rowIndex="1" spacing="10" style="-fx-background-color: white; -fx-padding: 20; -fx-background-radius: 8; -fx-effect: dropshadow(three-pass-box, rgba(0,0,0,0.1), 10, 0, 0, 2); -fx-pref-width: 250;">
+                <Label text="📊" style="-fx-font-size: 24px;"/>
+                <Label text="Báo cáo tùy chỉnh" style="-fx-font-size: 16px; -fx-font-weight: bold; -fx-text-fill: #2c3e50;"/>
+                <Label text="Tạo báo cáo theo yêu cầu riêng" style="-fx-font-size: 12px; -fx-text-fill: #7f8c8d; -fx-wrap-text: true;"/>
+                <Button text="Tạo báo cáo" style="-fx-background-color: #1abc9c; -fx-text-fill: white; -fx-padding: 8 15; -fx-background-radius: 5;"/>
+            </VBox>
+        </GridPane>
+
+        <!-- Quick Stats -->
+        <VBox spacing="15" style="-fx-background-color: #f8f9fa; -fx-padding: 25; -fx-background-radius: 8;">
+            <Label text="Thống kê nhanh (Tháng này)" style="-fx-font-weight: bold; -fx-font-size: 18px; -fx-text-fill: #2c3e50;"/>
+            <HBox spacing="40">
+                <VBox alignment="CENTER" spacing="5">
+                    <Label text="23" style="-fx-font-size: 28px; -fx-font-weight: bold; -fx-text-fill: #27ae60;"/>
+                    <Label text="Nhân viên mới" style="-fx-font-size: 14px; -fx-text-fill: #7f8c8d;"/>
+                </VBox>
+                <VBox alignment="CENTER" spacing="5">
+                    <Label text="5" style="-fx-font-size: 28px; -fx-font-weight: bold; -fx-text-fill: #e74c3c;"/>
+                    <Label text="Nhân viên nghỉ việc" style="-fx-font-size: 14px; -fx-text-fill: #7f8c8d;"/>
+                </VBox>
+                <VBox alignment="CENTER" spacing="5">
+                    <Label text="12" style="-fx-font-size: 28px; -fx-font-weight: bold; -fx-text-fill: #f39c12;"/>
+                    <Label text="Hợp đồng mới" style="-fx-font-size: 14px; -fx-text-fill: #7f8c8d;"/>
+                </VBox>
+                <VBox alignment="CENTER" spacing="5">
+                    <Label text="95%" style="-fx-font-size: 28px; -fx-font-weight: bold; -fx-text-fill: #3498db;"/>
+                    <Label text="Tỷ lệ chấm công" style="-fx-font-size: 14px; -fx-text-fill: #7f8c8d;"/>
+                </VBox>
+            </HBox>
+        </VBox>
+
+    </VBox>
+</ScrollPane> 
