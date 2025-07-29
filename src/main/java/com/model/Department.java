@@ -11,6 +11,10 @@ public class Department {
     private String address;
     private String phone;
     private String email;
+    
+    // Fields bổ sung để hiển thị
+    private String managerName;
+    private int employeeCount;
 
     @Override
     public String toString() {
@@ -103,5 +107,22 @@ public class Department {
 
     public void setEmail(String email) {
         this.email = email;
+    }
+    
+    // Getter và setter cho fields bổ sung
+    public String getManagerName() {
+        return managerName;
+    }
+
+    public void setManagerName(String managerName) {
+        this.managerName = managerName;
+    }
+
+    public int getEmployeeCount() {
+        return employeeCount;
+    }
+
+    public void setEmployeeCount(int employeeCount) {
+        this.employeeCount = employeeCount;
     }
 }

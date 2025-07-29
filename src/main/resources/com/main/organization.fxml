@@ -5,72 +5,72 @@
 
 <ScrollPane xmlns="http://javafx.com/javafx"
             xmlns:fx="http://javafx.com/fxml"
+            fx:controller="com.controller.OrganizationController"
             fitToWidth="true"
             fitToHeight="true"
             stylesheets="@sidebar.css">
 
-    <VBox styleClass="page-container" spacing="20">
+    <VBox styleClass="page-container" spacing="25" style="-fx-background-color: #f8f9fa; -fx-padding: 20;">
         
-        <!-- Header -->
-        <HBox alignment="CENTER_LEFT" spacing="20">
-            <Label text="Cơ cấu Tổ chức" styleClass="page-title"/>
+        <!-- Header với gradient background -->
+        <HBox alignment="CENTER_LEFT" spacing="20" style="-fx-background-color: linear-gradient(to right, #667eea, #764ba2); -fx-padding: 20; -fx-background-radius: 12; -fx-effect: dropshadow(three-pass-box, rgba(0,0,0,0.2), 15, 0, 0, 3);">
+            <Label text="🏢 Cơ cấu Tổ chức" style="-fx-font-size: 28px; -fx-font-weight: bold; -fx-text-fill: white;"/>
             <Region HBox.hgrow="ALWAYS"/>
-            <Button text="+ Thêm phòng ban" 
-                    style="-fx-background-color: #27ae60; -fx-text-fill: white; -fx-padding: 10 20; -fx-background-radius: 5;"/>
+            <Button fx:id="btnAddDepartment" 
+                    text="✚ Thêm phòng ban" 
+                    onAction="#handleAddDepartment"
+                    onMouseEntered="#onHoverAdd"
+                    onMouseExited="#onExitAdd"
+                    style="-fx-background-color: #27ae60; -fx-text-fill: white; -fx-padding: 12 24; -fx-background-radius: 25; -fx-font-size: 14px; -fx-font-weight: bold; -fx-effect: dropshadow(three-pass-box, rgba(0,0,0,0.3), 8, 0, 0, 2); -fx-cursor: hand;"/>
         </HBox>
 
-        <!-- Organization Chart -->
-        <VBox spacing="15" style="-fx-background-color: white; -fx-padding: 25; -fx-background-radius: 8; -fx-effect: dropshadow(three-pass-box, rgba(0,0,0,0.1), 10, 0, 0, 2);">
-            <Label text="Sơ đồ tổ chức" style="-fx-font-size: 18px; -fx-font-weight: bold; -fx-text-fill: #2c3e50;"/>
+        <!-- Organization Chart với styling cải tiến -->
+        <VBox fx:id="organizationChart" spacing="20" style="-fx-background-color: linear-gradient(to bottom, #ffffff, #f8f9fa); -fx-padding: 30; -fx-background-radius: 15; -fx-effect: dropshadow(three-pass-box, rgba(0,0,0,0.1), 20, 0, 0, 5);">
+            <Label text="📊 Sơ đồ tổ chức" style="-fx-font-size: 22px; -fx-font-weight: bold; -fx-text-fill: #2c3e50;"/>
             
             <!-- CEO Level -->
-            <VBox alignment="CENTER" spacing="20">
-                <VBox alignment="CENTER" spacing="5" style="-fx-background-color: #3498db; -fx-text-fill: white; -fx-padding: 15 25; -fx-background-radius: 8;">
-                    <Label text="Ban Giám Đốc" style="-fx-font-size: 16px; -fx-font-weight: bold; -fx-text-fill: white;"/>
-                    <Label text="Nguyễn Văn A - Giám Đốc" style="-fx-font-size: 12px; -fx-text-fill: #ecf0f1;"/>
+            <VBox alignment="CENTER" spacing="25">
+                <VBox alignment="CENTER" spacing="8" style="-fx-background-color: linear-gradient(to bottom, #3498db, #2980b9); -fx-text-fill: white; -fx-padding: 20 30; -fx-background-radius: 15; -fx-effect: dropshadow(three-pass-box, rgba(52, 152, 219, 0.4), 12, 0, 0, 3);">
+                    <Label text="👑 Ban Giám Đốc" style="-fx-font-size: 18px; -fx-font-weight: bold; -fx-text-fill: white;"/>
+                    <Label text="Nguyễn Văn A - Giám Đốc" style="-fx-font-size: 14px; -fx-text-fill: #ecf0f1;"/>
                 </VBox>
                 
-                <!-- Department Level -->
-                <HBox spacing="20" alignment="CENTER">
-                    <VBox alignment="CENTER" spacing="5" style="-fx-background-color: #27ae60; -fx-padding: 15 20; -fx-background-radius: 8;">
-                        <Label text="Phòng Nhân sự" style="-fx-font-size: 14px; -fx-font-weight: bold; -fx-text-fill: white;"/>
-                        <Label text="15 nhân viên" style="-fx-font-size: 12px; -fx-text-fill: #d5f4e6;"/>
-                    </VBox>
-                    
-                    <VBox alignment="CENTER" spacing="5" style="-fx-background-color: #e74c3c; -fx-padding: 15 20; -fx-background-radius: 8;">
-                        <Label text="Phòng Tài chính" style="-fx-font-size: 14px; -fx-font-weight: bold; -fx-text-fill: white;"/>
-                        <Label text="12 nhân viên" style="-fx-font-size: 12px; -fx-text-fill: #fadbd8;"/>
-                    </VBox>
-                    
-                    <VBox alignment="CENTER" spacing="5" style="-fx-background-color: #f39c12; -fx-padding: 15 20; -fx-background-radius: 8;">
-                        <Label text="Phòng IT" style="-fx-font-size: 14px; -fx-font-weight: bold; -fx-text-fill: white;"/>
-                        <Label text="20 nhân viên" style="-fx-font-size: 12px; -fx-text-fill: #fdeaa7;"/>
-                    </VBox>
-                    
-                    <VBox alignment="CENTER" spacing="5" style="-fx-background-color: #9b59b6; -fx-padding: 15 20; -fx-background-radius: 8;">
-                        <Label text="Phòng Marketing" style="-fx-font-size: 14px; -fx-font-weight: bold; -fx-text-fill: white;"/>
-                        <Label text="18 nhân viên" style="-fx-font-size: 12px; -fx-text-fill: #e8daef;"/>
-                    </VBox>
+                <!-- Department Level - Dynamic -->
+                <HBox fx:id="departmentBoxes" spacing="20" alignment="CENTER">
+                    <!-- Các phòng ban sẽ được tạo động từ database -->
                 </HBox>
             </VBox>
         </VBox>
 
-        <!-- Department Details -->
-        <HBox spacing="20">
-            <VBox spacing="15" HBox.hgrow="ALWAYS">
-                <Label text="Danh sách phòng ban" style="-fx-font-size: 18px; -fx-font-weight: bold; -fx-text-fill: #2c3e50;"/>
-                
-                <TableView style="-fx-background-color: white; -fx-border-color: #ddd; -fx-border-radius: 8;">
-                    <columns>
-                        <TableColumn text="Mã phòng ban" prefWidth="120"/>
-                        <TableColumn text="Tên phòng ban" prefWidth="200"/>
-                        <TableColumn text="Trưởng phòng" prefWidth="180"/>
-                        <TableColumn text="Số nhân viên" prefWidth="120"/>
-                        <TableColumn text="Thao tác" prefWidth="100"/>
-                    </columns>
-                </TableView>
-            </VBox>
-        </HBox>
+        <!-- Department Details Table với styling hiện đại -->
+        <VBox spacing="20" style="-fx-background-color: white; -fx-padding: 30; -fx-background-radius: 15; -fx-effect: dropshadow(three-pass-box, rgba(0,0,0,0.1), 20, 0, 0, 5);">
+            <HBox alignment="CENTER_LEFT" spacing="15">
+                <Label text="📋 Danh sách phòng ban" style="-fx-font-size: 22px; -fx-font-weight: bold; -fx-text-fill: #2c3e50;"/>
+                <Region HBox.hgrow="ALWAYS"/>
+                <Label fx:id="lblTotalDepartments" text="Tổng: 0 phòng ban" style="-fx-font-size: 14px; -fx-text-fill: #7f8c8d; -fx-background-color: #ecf0f1; -fx-padding: 8 15; -fx-background-radius: 20;"/>
+            </HBox>
+            
+            <TableView fx:id="departmentTable" 
+                      style="-fx-background-color: transparent; -fx-table-cell-border-color: #ecf0f1; -fx-focus-color: transparent; -fx-faint-focus-color: transparent;">
+                <columns>
+                    <TableColumn fx:id="colDepartmentCode" text="🏷️ Mã phòng ban" prefWidth="140" 
+                                style="-fx-alignment: CENTER;"/>
+                    <TableColumn fx:id="colDepartmentName" text="🏢 Tên phòng ban" prefWidth="220"/>
+                    <TableColumn fx:id="colManagerName" text="👤 Trưởng phòng" prefWidth="200"/>
+                    <TableColumn fx:id="colEmployeeCount" text="👥 Số nhân viên" prefWidth="140" 
+                                style="-fx-alignment: CENTER;"/>
+                    <TableColumn fx:id="actionColumn" text="⚙️ Thao tác" prefWidth="180" 
+                                style="-fx-alignment: CENTER;"/>
+                </columns>
+                <placeholder>
+                    <VBox spacing="10" alignment="CENTER" style="-fx-padding: 50;">
+                        <Label text="📁" style="-fx-font-size: 48px; -fx-text-fill: #bdc3c7;"/>
+                        <Label text="Không có dữ liệu phòng ban" style="-fx-font-size: 16px; -fx-text-fill: #7f8c8d;"/>
+                        <Label text="Hãy thêm phòng ban đầu tiên" style="-fx-font-size: 12px; -fx-text-fill: #95a5a6;"/>
+                    </VBox>
+                </placeholder>
+            </TableView>
+        </VBox>
 
     </VBox>
 </ScrollPane> 

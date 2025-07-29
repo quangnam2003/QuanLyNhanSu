@@ -1,19 +1,35 @@
 <?xml version="1.0" encoding="UTF-8"?>
 
 <?import javafx.scene.control.*?>
+<?import javafx.scene.image.Image?>
+<?import javafx.scene.image.ImageView?>
 <?import javafx.scene.layout.*?>
 
-<AnchorPane xmlns="http://javafx.com/javafx"
-            xmlns:fx="http://javafx.com/fxml"
-            fx:controller="com.controller.LoginController"
-            prefWidth="400" prefHeight="300">
+<StackPane xmlns="http://javafx.com/javafx"
+           xmlns:fx="http://javafx.com/fxml"
+           fx:controller="com.controller.LoginController"
+           styleClass="root"
+           stylesheets="@login.css"
+           prefWidth="800" prefHeight="500">
 
-    <VBox alignment="CENTER" spacing="15" layoutX="50" layoutY="50" prefWidth="300" prefHeight="200" AnchorPane.topAnchor="50" AnchorPane.leftAnchor="50">
-        <Label text="Đăng nhập hệ thống" style="-fx-font-size: 16px; -fx-font-weight: bold;" />
+    <!-- VBox đăng nhập chính -->
+    <VBox alignment="CENTER" spacing="15"
+          maxWidth="320" maxHeight="350"
+          styleClass="vbox-login">
+
+        <ImageView fitHeight="48" fitWidth="48" pickOnBounds="true" preserveRatio="true">
+            <image>
+                <Image url="https://cdn-icons-png.flaticon.com/512/3135/3135715.png" />
+            </image>
+        </ImageView>
+
+        <Label text="Đăng nhập hệ thống"
+               style="-fx-font-size: 16px; -fx-font-weight: bold;" />
+
         <TextField fx:id="usernameField" promptText="Tên đăng nhập" />
         <PasswordField fx:id="passwordField" promptText="Mật khẩu" />
         <Button text="Đăng nhập" onAction="#handleLogin" />
-        <Label fx:id="errorLabel" textFill="red" />
+        <Label fx:id="errorLabel" id="errorLabel" />
     </VBox>
 
-</AnchorPane>
+</StackPane>
