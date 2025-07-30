@@ -13,25 +13,25 @@ public class MainController {
 
     @FXML
     private StackPane contentArea;
-    
+
     @FXML
     private VBox sidebar;
-    
+
     @FXML
     private Button dashboardBtn;
-    
+
     @FXML
     private Button employeeBtn;
-    
+
     @FXML
     private Button organizationBtn;
-    
+
     @FXML
     private Button contractBtn;
-    
+
     @FXML
     private Button reportBtn;
-    
+
     @FXML
     private Button settingsBtn;
 
@@ -40,7 +40,7 @@ public class MainController {
         // Load CSS
         contentArea.getStylesheets().add(getClass().getResource("/com/main/sidebar.css").toExternalForm());
         sidebar.getStylesheets().add(getClass().getResource("/com/main/sidebar.css").toExternalForm());
-        
+
         // Load dashboard by default
         loadPage("dashboard");
     }
@@ -52,7 +52,7 @@ public class MainController {
 
         // Remove active class from all buttons
         removeActiveClass();
-        
+
         // Add active class to clicked button
         clickedButton.getStyleClass().add("active");
 
@@ -70,7 +70,7 @@ public class MainController {
             case "Hợp đồng":
                 loadPage("contracts");
                 break;
-            case "Hướng dẫn":
+            case "Báo cáo":
                 loadPage("reports");
                 break;
             case "Cài đặt":
@@ -80,7 +80,7 @@ public class MainController {
                 loadPage("dashboard");
         }
     }
-    
+
     private void removeActiveClass() {
         dashboardBtn.getStyleClass().remove("active");
         employeeBtn.getStyleClass().remove("active");
@@ -95,14 +95,14 @@ public class MainController {
             String fxmlPath = "/com/main/" + page + ".fxml";
             FXMLLoader loader = new FXMLLoader(getClass().getResource(fxmlPath));
             Node pageContent = loader.load();
-            
+
             contentArea.getChildren().clear();
             contentArea.getChildren().add(pageContent);
-            
+
         } catch (IOException e) {
             System.err.println("Could not load page: " + page);
             e.printStackTrace();
-            
+
             // Fallback: show simple label
             contentArea.getChildren().clear();
             javafx.scene.control.Label errorLabel = new javafx.scene.control.Label("Trang " + page + " đang được phát triển");

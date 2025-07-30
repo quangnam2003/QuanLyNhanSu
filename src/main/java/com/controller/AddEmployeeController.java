@@ -52,11 +52,20 @@ public class AddEmployeeController {
             cbPosition.setValue(positionService.getPositionById(editingEmployee.getPositionId()));
         }
 
-        cbDepartment.setOnAction(e -> updatePositionList());
-        btnSave.setOnAction(e -> handleSave());
+        cbDepartment.setOnAction(event -> {
+            Department selected = cbDepartment.getValue();
+            if (selected != null) {
+                List<Position> filtered = positionService.getPositionsByDepartmentId(selected.getId());
+                cbPosition.getItems().setAll(filtered);
+            } else {
+                cbPosition.getItems().clear();
+            }
+        });
+
+
     }
 
-
+    @FXML
     private void handleSave() {
         if (!isValidForm()) return;
 

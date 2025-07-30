@@ -73,9 +73,26 @@ public class PositionService {
         return null;
     }
 
-    public List<Position> getPositionsByDepartmentId(int deptId) {
-        return getAllPositions().stream()
-                .filter(p -> p.getDepartmentId() == deptId)
-                .collect(Collectors.toList());
+    public List<Position> getPositionsByDepartmentId(int departmentId) {
+        List<Position> positions = new ArrayList<>();
+        String query = "SELECT * FROM positions WHERE department_id = ?";
+        try (Connection conn = DBUtil.getConnection();
+             PreparedStatement stmt = conn.prepareStatement(query)) {
+
+            stmt.setInt(1, departmentId);
+            ResultSet rs = stmt.executeQuery();
+            while (rs.next()) {
+                Position p = new Position();
+                p.setId(rs.getInt("id"));
+                p.setPositionName(rs.getString("position_name"));
+                p.setPositionCode(rs.getString("position_code"));
+                // bổ sung nếu cần
+                positions.add(p);
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+        return positions;
     }
+
 }

@@ -75,8 +75,9 @@
             <padding>
                 <Insets top="20" right="20" bottom="20" left="20"/>
             </padding>
-            <Button fx:id="btnSave" text="Lưu" style="-fx-background-color: #27ae60; -fx-text-fill: white;"/>
-            <Button fx:id="btnCancel" text="Hủy" onAction="#handleCancel"/>
+            <Button fx:id="btnSave" text="Lưu" style="-fx-background-color: #27ae60; -fx-text-fill: white;" onAction="#handleSave"
+                    styleClass="action-button save-button"/>
+            <Button fx:id="btnCancel" text="Hủy" onAction="#handleCancel" styleClass="action-button cancel-button"/>
         </HBox>
     </bottom>
 </BorderPane>

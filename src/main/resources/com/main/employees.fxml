@@ -28,14 +28,21 @@
         <HBox spacing="15" alignment="CENTER_LEFT">
             <TextField fx:id="searchField" promptText="Tìm kiếm nhân viên..."
                        prefWidth="300"
-                       style="-fx-padding: 10; -fx-background-radius: 5; -fx-border-color: #ddd; -fx-border-radius: 5;"/>
-            <ComboBox fx:id="departmentFilter" promptText="Phòng ban"
-                      prefWidth="150"
-                      style="-fx-padding: 10;"/>
-            <ComboBox fx:id="positionFilter" promptText="Chức vụ"
-                      prefWidth="150"
-                      style="-fx-padding: 10;"/>
+                       style="-fx-padding: 10; -fx-background-radius: 5; -fx-border-color: #ddd; -fx-border-radius: 5;" />
+
+            <VBox spacing="5">
+                <Label text="Phòng ban" />
+                <ComboBox fx:id="departmentFilter" promptText="Chọn phòng ban"
+                          prefWidth="150" style="-fx-padding: 10;" />
+            </VBox>
+
+            <VBox spacing="5">
+                <Label text="Chức vụ" />
+                <ComboBox fx:id="positionFilter" promptText="Chọn chức vụ"
+                          prefWidth="150" style="-fx-padding: 10;" />
+            </VBox>
         </HBox>
+
 
         <!-- Employee Table -->
         <TableView fx:id="employeeTable" style="-fx-background-color: white; -fx-border-color: #ddd; -fx-border-radius: 8;">

@@ -1,5 +1,7 @@
 package com.controller;
 
+import com.model.Department;
+import com.model.Position;
 import javafx.scene.control.Button;
 import javafx.scene.control.TableCell;
 import javafx.scene.control.TableColumn;
