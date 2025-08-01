@@ -1,7 +1,9 @@
 package com.controller;
 
 import com.model.Department;
+import com.model.Employee;
 import com.service.DepartmentService;
+import com.service.EmployeeService;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
 import javafx.event.ActionEvent;
@@ -17,6 +19,7 @@ import javafx.util.Callback;
 import javafx.beans.property.SimpleStringProperty;
 
 import java.net.URL;
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.ResourceBundle;
@@ -35,13 +38,16 @@ public class OrganizationController implements Initializable {
     @FXML private TableColumn<Department, Void> actionColumn;
     
     @FXML private Button btnAddDepartment;
+
     @FXML private Label lblTotalDepartments;
+    @FXML private Label lblDebugInfo;
     
     // Organizational Chart Elements
     @FXML private VBox organizationChart;
     @FXML private HBox departmentBoxes;
     
     private final DepartmentService departmentService = new DepartmentService();
+    private final EmployeeService employeeService = new EmployeeService();
 
     @Override
     public void initialize(URL location, ResourceBundle resources) {
@@ -188,26 +194,37 @@ public class OrganizationController implements Initializable {
             public TableCell<Department, Void> call(final TableColumn<Department, Void> param) {
                 return new TableCell<>() {
                     private final Button btnEdit = new Button("✏️ Sửa");
+                    private final Button btnViewEmployees = new Button("👥 Xem NV");
                     private final Button btnDelete = new Button("🗑️ Xoá");
-                    private final HBox hBox = new HBox(btnEdit, btnDelete);
+                    private final HBox hBox = new HBox(btnEdit, btnViewEmployees, btnDelete);
 
                     {
                         // Styling cho button Sửa
-                        btnEdit.setStyle("-fx-background-color: #3498db; -fx-text-fill: white; -fx-background-radius: 8; -fx-padding: 6 12; -fx-font-size: 12px; -fx-font-weight: bold; -fx-cursor: hand;");
-                        btnEdit.setOnMouseEntered(e -> btnEdit.setStyle("-fx-background-color: #2980b9; -fx-text-fill: white; -fx-background-radius: 8; -fx-padding: 6 12; -fx-font-size: 12px; -fx-font-weight: bold; -fx-cursor: hand;"));
-                        btnEdit.setOnMouseExited(e -> btnEdit.setStyle("-fx-background-color: #3498db; -fx-text-fill: white; -fx-background-radius: 8; -fx-padding: 6 12; -fx-font-size: 12px; -fx-font-weight: bold; -fx-cursor: hand;"));
+                        btnEdit.setStyle("-fx-background-color: #3498db; -fx-text-fill: white; -fx-background-radius: 6; -fx-padding: 4 8; -fx-font-size: 10px; -fx-font-weight: bold; -fx-cursor: hand; -fx-min-width: 45px;");
+                        btnEdit.setOnMouseEntered(e -> btnEdit.setStyle("-fx-background-color: #2980b9; -fx-text-fill: white; -fx-background-radius: 6; -fx-padding: 4 8; -fx-font-size: 10px; -fx-font-weight: bold; -fx-cursor: hand; -fx-min-width: 45px;"));
+                        btnEdit.setOnMouseExited(e -> btnEdit.setStyle("-fx-background-color: #3498db; -fx-text-fill: white; -fx-background-radius: 6; -fx-padding: 4 8; -fx-font-size: 10px; -fx-font-weight: bold; -fx-cursor: hand; -fx-min-width: 45px;"));
+                        
+                        // Styling cho button Xem nhân viên
+                        btnViewEmployees.setStyle("-fx-background-color: #27ae60; -fx-text-fill: white; -fx-background-radius: 6; -fx-padding: 4 8; -fx-font-size: 10px; -fx-font-weight: bold; -fx-cursor: hand; -fx-min-width: 65px;");
+                        btnViewEmployees.setOnMouseEntered(e -> btnViewEmployees.setStyle("-fx-background-color: #229954; -fx-text-fill: white; -fx-background-radius: 6; -fx-padding: 4 8; -fx-font-size: 10px; -fx-font-weight: bold; -fx-cursor: hand; -fx-min-width: 65px;"));
+                        btnViewEmployees.setOnMouseExited(e -> btnViewEmployees.setStyle("-fx-background-color: #27ae60; -fx-text-fill: white; -fx-background-radius: 6; -fx-padding: 4 8; -fx-font-size: 10px; -fx-font-weight: bold; -fx-cursor: hand; -fx-min-width: 65px;"));
                         
                         // Styling cho button Xoá
-                        btnDelete.setStyle("-fx-background-color: #e74c3c; -fx-text-fill: white; -fx-background-radius: 8; -fx-padding: 6 12; -fx-font-size: 12px; -fx-font-weight: bold; -fx-cursor: hand;");
-                        btnDelete.setOnMouseEntered(e -> btnDelete.setStyle("-fx-background-color: #c0392b; -fx-text-fill: white; -fx-background-radius: 8; -fx-padding: 6 12; -fx-font-size: 12px; -fx-font-weight: bold; -fx-cursor: hand;"));
-                        btnDelete.setOnMouseExited(e -> btnDelete.setStyle("-fx-background-color: #e74c3c; -fx-text-fill: white; -fx-background-radius: 8; -fx-padding: 6 12; -fx-font-size: 12px; -fx-font-weight: bold; -fx-cursor: hand;"));
+                        btnDelete.setStyle("-fx-background-color: #e74c3c; -fx-text-fill: white; -fx-background-radius: 6; -fx-padding: 4 8; -fx-font-size: 10px; -fx-font-weight: bold; -fx-cursor: hand; -fx-min-width: 45px;");
+                        btnDelete.setOnMouseEntered(e -> btnDelete.setStyle("-fx-background-color: #c0392b; -fx-text-fill: white; -fx-background-radius: 6; -fx-padding: 4 8; -fx-font-size: 10px; -fx-font-weight: bold; -fx-cursor: hand; -fx-min-width: 45px;"));
+                        btnDelete.setOnMouseExited(e -> btnDelete.setStyle("-fx-background-color: #e74c3c; -fx-text-fill: white; -fx-background-radius: 6; -fx-padding: 4 8; -fx-font-size: 10px; -fx-font-weight: bold; -fx-cursor: hand; -fx-min-width: 45px;"));
 
-                        hBox.setSpacing(8);
+                        hBox.setSpacing(5);
                         hBox.setAlignment(Pos.CENTER);
 
                         btnEdit.setOnAction(event -> {
                             Department department = getTableView().getItems().get(getIndex());
                             handleEditDepartment(department);
+                        });
+
+                        btnViewEmployees.setOnAction(event -> {
+                            Department department = getTableView().getItems().get(getIndex());
+                            handleViewEmployees(department);
                         });
 
                         btnDelete.setOnAction(event -> {
@@ -239,14 +256,20 @@ public class OrganizationController implements Initializable {
             // Cập nhật label tổng số
             updateTotalLabel(departmentList.size());
             
+            // Tính tổng nhân viên và cập nhật debug info
+            int totalEmployees = departmentList.stream().mapToInt(Department::getEmployeeCount).sum();
+            updateDebugInfo(departmentList.size(), totalEmployees);
+            
             // Debug: In ra thông tin để kiểm tra
             if (DEBUG) {
                 System.out.println("=== DEBUG: Department Table Data ===");
                 for (Department dept : departmentList) {
                     System.out.println(dept.getDepartmentName() + ": " + dept.getEmployeeCount() + " nhân viên");
                 }
+                System.out.println("Tổng cộng: " + totalEmployees + " nhân viên trong " + departmentList.size() + " phòng ban");
             }
         } catch (Exception e) {
+            updateDebugInfo(0, 0);
             showAlert(Alert.AlertType.ERROR, "Lỗi", "Không thể tải dữ liệu phòng ban: " + e.getMessage());
         }
     }
@@ -254,6 +277,12 @@ public class OrganizationController implements Initializable {
     private void updateTotalLabel(int count) {
         if (lblTotalDepartments != null) {
             lblTotalDepartments.setText("📊 Tổng: " + count + " phòng ban");
+        }
+    }
+
+    private void updateDebugInfo(int departmentCount, int totalEmployees) {
+        if (lblDebugInfo != null) {
+            lblDebugInfo.setText("👥 " + totalEmployees + " nhân viên trong " + departmentCount + " phòng ban");
         }
     }
 
@@ -290,6 +319,11 @@ public class OrganizationController implements Initializable {
      * Refresh toàn bộ dữ liệu để đảm bảo tính nhất quán
      */
     private void refreshAllData() {
+        // Debug dữ liệu thô từ database
+        if (DEBUG) {
+            departmentService.debugEmployeeData();
+        }
+        
         loadDepartmentData();
         loadOrganizationChart();
         
@@ -400,6 +434,8 @@ public class OrganizationController implements Initializable {
         }
     }
 
+
+
     @FXML
     private void handleAddDepartment(ActionEvent event) {
         try {
@@ -453,6 +489,93 @@ public class OrganizationController implements Initializable {
             }
         } catch (Exception e) {
             showAlert(Alert.AlertType.ERROR, "Lỗi", "Đã xảy ra lỗi: " + e.getMessage());
+        }
+    }
+
+    private void handleViewEmployees(Department department) {
+        try {
+            // Lấy danh sách nhân viên của phòng ban
+            List<Employee> employees = employeeService.searchEmployees(null, department.getId(), null);
+            
+            // Tạo dialog hiển thị danh sách nhân viên
+            Dialog<Void> dialog = new Dialog<>();
+            dialog.setTitle("👥 Danh sách nhân viên - " + department.getDepartmentName());
+            dialog.setHeaderText(null);
+            dialog.setResizable(true);
+            
+            // Tạo TableView cho nhân viên
+            TableView<Employee> employeeTable = new TableView<>();
+            employeeTable.setStyle("-fx-font-size: 13px;");
+            
+            // Cột Tên
+            TableColumn<Employee, String> nameCol = new TableColumn<>("👤 Họ tên");
+            nameCol.setCellValueFactory(data -> new SimpleStringProperty(
+                data.getValue().getFirstName() + " " + data.getValue().getLastName()));
+            nameCol.setPrefWidth(180);
+            
+            // Cột Email  
+            TableColumn<Employee, String> emailCol = new TableColumn<>("📧 Email");
+            emailCol.setCellValueFactory(new PropertyValueFactory<>("email"));
+            emailCol.setPrefWidth(200);
+            
+            // Cột Điện thoại
+            TableColumn<Employee, String> phoneCol = new TableColumn<>("📞 Điện thoại");
+            phoneCol.setCellValueFactory(new PropertyValueFactory<>("phone"));
+            phoneCol.setPrefWidth(130);
+            
+            // Cột Trạng thái
+            TableColumn<Employee, String> statusCol = new TableColumn<>("📊 Trạng thái");
+            statusCol.setCellValueFactory(new PropertyValueFactory<>("employmentStatus"));
+            statusCol.setPrefWidth(120);
+            statusCol.setCellFactory(column -> new TableCell<Employee, String>() {
+                @Override
+                protected void updateItem(String item, boolean empty) {
+                    super.updateItem(item, empty);
+                    if (empty || item == null) {
+                        setText(null);
+                        setGraphic(null);
+                    } else {
+                        Label statusLabel = new Label(item);
+                        if ("Active".equals(item)) {
+                            statusLabel.setStyle("-fx-background-color: #27ae60; -fx-text-fill: white; -fx-padding: 4 8; -fx-background-radius: 12; -fx-font-size: 11px;");
+                        } else {
+                            statusLabel.setStyle("-fx-background-color: #e74c3c; -fx-text-fill: white; -fx-padding: 4 8; -fx-background-radius: 12; -fx-font-size: 11px;");
+                        }
+                        setText(null);
+                        setGraphic(statusLabel);
+                        setAlignment(Pos.CENTER);
+                    }
+                }
+            });
+            
+            employeeTable.getColumns().addAll(nameCol, emailCol, phoneCol, statusCol);
+            employeeTable.setItems(FXCollections.observableArrayList(employees));
+            
+            // Layout
+            VBox content = new VBox(15);
+            content.setStyle("-fx-padding: 20;");
+            
+            Label infoLabel = new Label("📋 Tổng số: " + employees.size() + " nhân viên");
+            infoLabel.setStyle("-fx-font-size: 14px; -fx-font-weight: bold; -fx-text-fill: #2c3e50;");
+            
+            content.getChildren().addAll(infoLabel, employeeTable);
+            
+            // Set size
+            employeeTable.setPrefHeight(400);
+            employeeTable.setPrefWidth(650);
+            
+            dialog.getDialogPane().setContent(content);
+            dialog.getDialogPane().getButtonTypes().add(ButtonType.OK);
+            
+            // Styling cho button
+            dialog.getDialogPane().lookupButton(ButtonType.OK).setStyle(
+                "-fx-background-color: #3498db; -fx-text-fill: white; -fx-font-weight: bold; -fx-padding: 8 16; -fx-background-radius: 5;"
+            );
+            
+            dialog.showAndWait();
+            
+        } catch (Exception e) {
+            showAlert(Alert.AlertType.ERROR, "Lỗi", "Không thể tải danh sách nhân viên: " + e.getMessage());
         }
     }
 

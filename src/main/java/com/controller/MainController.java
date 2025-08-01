@@ -70,8 +70,8 @@ public class MainController {
             case "Hợp đồng":
                 loadPage("contracts");
                 break;
-            case "Hướng dẫn":
-                loadPage("reports");
+            case "Tài Liệu":
+                loadPage("documents");
                 break;
             case "Cài đặt":
                 loadPage("settings");

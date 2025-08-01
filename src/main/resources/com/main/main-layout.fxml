@@ -31,7 +31,7 @@
             <Button fx:id="employeeBtn" text="Nhân viên" onAction="#handleMenu" styleClass="nav-button"/>
             <Button fx:id="organizationBtn" text="Tổ chức" onAction="#handleMenu" styleClass="nav-button"/>
             <Button fx:id="contractBtn" text="Hợp đồng" onAction="#handleMenu" styleClass="nav-button"/>
-            <Button fx:id="reportBtn" text="Hướng dẫn" onAction="#handleMenu" styleClass="nav-button"/>
+            <Button fx:id="reportBtn" text="Tài Liệu" onAction="#handleMenu" styleClass="nav-button"/>
             <Button fx:id="settingsBtn" text="Cài đặt" onAction="#handleMenu" styleClass="nav-button"/>
         </VBox>
     </left>

@@ -69,11 +69,11 @@
                     <Label text="Quản lý hợp đồng lao động" styleClass="card-description"/>
                 </VBox>
 
-                <!-- Báo cáo Card -->
-                <VBox styleClass="dashboard-card" onMouseClicked="#openReports">
-                    <Label text="📊" styleClass="card-icon"/>
-                    <Label text="Báo cáo" styleClass="card-title"/>
-                    <Label text="Thống kê và phân tích dữ liệu" styleClass="card-description"/>
+                <!-- Tài liệu Card -->
+                <VBox styleClass="dashboard-card" onMouseClicked="#openDocuments">
+                    <Label text="📄" styleClass="card-icon"/>
+                    <Label text="Tài liệu" styleClass="card-title"/>
+                    <Label text="Quản lý và xem tài liệu công ty" styleClass="card-description"/>
                 </VBox>
 
                 <!-- Cài đặt Card -->

@@ -24,9 +24,9 @@ public class DashboardController {
     }
 
     @FXML
-    public void openReports(MouseEvent event) {
-        // Logic để mở trang báo cáo
-        System.out.println("Chuyển đến trang Báo cáo");
+    public void openDocuments(MouseEvent event) {
+        // Logic để mở trang tài liệu
+        System.out.println("Chuyển đến trang Tài liệu");
     }
 
     @FXML

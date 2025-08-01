@@ -284,4 +284,55 @@ public class DepartmentService {
         }
         return false;
     }
+
+    /**
+     * Debug method để kiểm tra dữ liệu nhân viên và phòng ban
+     */
+    public void debugEmployeeData() {
+        System.out.println("=== DEBUG: Kiểm tra dữ liệu nhân viên và phòng ban ===");
+        
+        // Kiểm tra tổng số nhân viên
+        try (Connection conn = DBUtil.getConnection()) {
+            String totalEmployeesSql = "SELECT COUNT(*) FROM employees";
+            try (PreparedStatement stmt = conn.prepareStatement(totalEmployeesSql);
+                 ResultSet rs = stmt.executeQuery()) {
+                if (rs.next()) {
+                    System.out.println("Tổng số nhân viên trong database: " + rs.getInt(1));
+                }
+            }
+            
+            // Kiểm tra nhân viên theo employment_status
+            String statusSql = "SELECT employment_status, COUNT(*) FROM employees GROUP BY employment_status";
+            try (PreparedStatement stmt = conn.prepareStatement(statusSql);
+                 ResultSet rs = stmt.executeQuery()) {
+                System.out.println("Nhân viên theo trạng thái:");
+                while (rs.next()) {
+                    System.out.println("  - " + rs.getString(1) + ": " + rs.getInt(2) + " nhân viên");
+                }
+            }
+            
+            // Kiểm tra nhân viên theo phòng ban
+            String deptSql = """
+                SELECT d.department_name, d.id as dept_id, 
+                       COUNT(e.id) as total_employees,
+                       COUNT(CASE WHEN e.employment_status = 'Active' THEN 1 END) as active_employees
+                FROM departments d 
+                LEFT JOIN employees e ON d.id = e.department_id
+                GROUP BY d.id, d.department_name 
+                ORDER BY d.department_name
+            """;
+            try (PreparedStatement stmt = conn.prepareStatement(deptSql);
+                 ResultSet rs = stmt.executeQuery()) {
+                System.out.println("Nhân viên theo phòng ban:");
+                while (rs.next()) {
+                    System.out.println("  - " + rs.getString("department_name") + " (ID: " + rs.getInt("dept_id") + "): " 
+                        + rs.getInt("total_employees") + " tổng, " + rs.getInt("active_employees") + " đang làm việc");
+                }
+            }
+            
+        } catch (SQLException e) {
+            System.err.println("Lỗi khi debug dữ liệu: " + e.getMessage());
+            e.printStackTrace();
+        }
+    }
 }
