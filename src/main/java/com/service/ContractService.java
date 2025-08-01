@@ -90,9 +90,14 @@ public class ContractService {
         }
 
         if (status != null && !status.isEmpty()) {
-            sql.append(" AND ec.status = ?");
-            parameters.add(status);
+            if (status.equals("Active")) {
+                sql.append(" AND (ec.end_date IS NULL OR ec.end_date > CURDATE())");
+            } else if (status.equals("Expired")) {
+                sql.append(" AND ec.end_date IS NOT NULL AND ec.end_date < CURDATE()");
+            }
+            // status khác thì không lọc
         }
+
 
         if (fromDate != null) {
             sql.append(" AND ec.start_date >= ?");
@@ -126,7 +131,7 @@ public class ContractService {
         String sql = """
             INSERT INTO employment_contracts 
             (contract_number, employee_id, contract_type_id, start_date, end_date, 
-             salary, allowances, benefits, terms_conditions, status, signed_date, notes, created_by)
+             salary, allowances, benefits, terms_conditions, signed_date, notes, created_by)
             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
             """;
 
@@ -142,7 +147,6 @@ public class ContractService {
             stmt.setBigDecimal(7, contract.getAllowances());
             stmt.setString(8, contract.getBenefits());
             stmt.setString(9, contract.getTermsConditions());
-            stmt.setString(10, contract.getStatus());
             stmt.setDate(11, contract.getSignedDate() != null ? Date.valueOf(contract.getSignedDate()) : null);
             stmt.setString(12, contract.getNotes());
             stmt.setInt(13, contract.getCreatedBy());
@@ -160,7 +164,7 @@ public class ContractService {
             UPDATE employment_contracts 
             SET contract_number = ?, employee_id = ?, contract_type_id = ?, start_date = ?, 
                 end_date = ?, salary = ?, allowances = ?, benefits = ?, terms_conditions = ?, 
-                status = ?, signed_date = ?, notes = ?
+                signed_date = ?, notes = ?
             WHERE id = ?
             """;
 
@@ -176,7 +180,6 @@ public class ContractService {
             stmt.setBigDecimal(7, contract.getAllowances());
             stmt.setString(8, contract.getBenefits());
             stmt.setString(9, contract.getTermsConditions());
-            stmt.setString(10, contract.getStatus());
             stmt.setDate(11, contract.getSignedDate() != null ? Date.valueOf(contract.getSignedDate()) : null);
             stmt.setString(12, contract.getNotes());
             stmt.setInt(13, contract.getId());
@@ -208,9 +211,9 @@ public class ContractService {
         Map<String, Integer> stats = new HashMap<>();
         String sql = """
             SELECT 
-                SUM(CASE WHEN status = 'Active' THEN 1 ELSE 0 END) as active_contracts,
-                SUM(CASE WHEN status = 'Active' AND end_date IS NOT NULL AND end_date BETWEEN CURDATE() AND DATE_ADD(CURDATE(), INTERVAL 30 DAY) THEN 1 ELSE 0 END) as expiring_soon,
-                SUM(CASE WHEN status = 'Expired' OR (end_date IS NOT NULL AND end_date < CURDATE()) THEN 1 ELSE 0 END) as expired_contracts
+                SUM(CASE WHEN end_date IS NULL OR end_date > CURDATE() THEN 1 ELSE 0 END) as active_contracts,
+                SUM(CASE WHEN end_date IS NOT NULL AND end_date BETWEEN CURDATE() AND DATE_ADD(CURDATE(), INTERVAL 30 DAY) THEN 1 ELSE 0 END) as expiring_soon,
+                SUM(CASE WHEN end_date IS NOT NULL AND end_date < CURDATE() THEN 1 ELSE 0 END) as expired_contracts
             FROM employment_contracts
             """;
 
@@ -236,7 +239,7 @@ public class ContractService {
         String sql = """
             SELECT ct.type_name, COUNT(ec.id) as count
             FROM contract_types ct
-            LEFT JOIN employment_contracts ec ON ct.id = ec.contract_type_id AND ec.status = 'Active'
+            LEFT JOIN employment_contracts ec ON ct.id = ec.contract_type_id AND (ec.end_date IS NULL OR ec.end_date > CURDATE())
             GROUP BY ct.id, ct.type_name
             """;
 
@@ -331,7 +334,6 @@ public class ContractService {
         contract.setAllowances(rs.getBigDecimal("allowances"));
         contract.setBenefits(rs.getString("benefits"));
         contract.setTermsConditions(rs.getString("terms_conditions"));
-        contract.setStatus(rs.getString("status"));
 
         Date signedDate = rs.getDate("signed_date");
         if (signedDate != null) {

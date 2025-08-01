@@ -4,6 +4,7 @@ import com.model.Contract;
 import com.model.Employee;
 import com.service.ContractService;
 import com.service.EmployeeService;
+import javafx.beans.property.SimpleStringProperty;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
 import javafx.fxml.FXML;
@@ -119,7 +120,10 @@ public class ContractController implements Initializable {
 
 
         // Custom cell factory for status column with colored indicators
-        statusColumn.setCellValueFactory(new PropertyValueFactory<>("status"));
+        statusColumn.setCellValueFactory(cellData -> {
+            Contract contract = cellData.getValue();
+            return new SimpleStringProperty(contract.getStatus());  // status được tính từ getStatus()
+        });
         statusColumn.setCellFactory(column -> new TableCell<Contract, String>() {
             @Override
             protected void updateItem(String status, boolean empty) {
@@ -205,7 +209,7 @@ public class ContractController implements Initializable {
         );
 
         // Initialize status combo box
-        statusComboBox.getItems().addAll("Active", "Expired", "Terminated", "Renewed");
+        statusComboBox.getItems().addAll("Active", "Expired");
     }
 
     private void loadContractData() {
@@ -364,7 +368,6 @@ public class ContractController implements Initializable {
         allowancesField.setPromptText("Phụ cấp");
 
         ComboBox<String> statusComboBoxDialog = new ComboBox<>();
-        statusComboBoxDialog.getItems().addAll("Active", "Expired", "Terminated", "Renewed");
 
         DatePicker signedDatePicker = new DatePicker();
         TextArea benefitsArea = new TextArea();
@@ -388,7 +391,6 @@ public class ContractController implements Initializable {
             if (contract.getAllowances() != null) {
                 allowancesField.setText(contract.getAllowances().toString());
             }
-            statusComboBoxDialog.setValue(contract.getStatus());
             signedDatePicker.setValue(contract.getSignedDate());
             benefitsArea.setText(contract.getBenefits());
             notesArea.setText(contract.getNotes());
@@ -413,8 +415,6 @@ public class ContractController implements Initializable {
         grid.add(salaryField, 1, 5);
         grid.add(new Label("Phụ cấp:"), 0, 6);
         grid.add(allowancesField, 1, 6);
-        grid.add(new Label("Trạng thái:"), 0, 7);
-        grid.add(statusComboBoxDialog, 1, 7);
         grid.add(new Label("Ngày ký:"), 0, 8);
         grid.add(signedDatePicker, 1, 8);
         grid.add(new Label("Quyền lợi:"), 0, 9);
@@ -486,7 +486,6 @@ public class ContractController implements Initializable {
                     return null;
                 }
 
-                newContract.setStatus(statusComboBoxDialog.getValue());
                 newContract.setSignedDate(signedDatePicker.getValue());
                 newContract.setBenefits(benefitsArea.getText().trim());
                 newContract.setNotes(notesArea.getText().trim());
