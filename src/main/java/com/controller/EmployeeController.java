@@ -50,6 +50,7 @@ public class EmployeeController implements Initializable {
     @FXML private TableColumn<Employee, String> colStatus;
     @FXML private TableColumn<Employee, Float> colSalaryGrade;
 
+
     @FXML
     private Button btnAddEmployee;
 
@@ -169,6 +170,7 @@ public class EmployeeController implements Initializable {
             stage.showAndWait();
 
             loadEmployeeData(); // reload sau khi đóng form
+            loadEmployeeStats();
         } catch (IOException e) {
             e.printStackTrace();
         }
@@ -186,6 +188,7 @@ public class EmployeeController implements Initializable {
         if (result.isPresent() && result.get() == ButtonType.OK) {
             employeeService.deleteEmployee(employee.getId());
             loadEmployeeData();
+            loadEmployeeStats();
         }
     }
 
