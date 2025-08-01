@@ -219,26 +219,55 @@ public class ContractController implements Initializable {
     }
 
     private void loadStatistics() {
-        // Load general statistics
-        Map<String, Integer> stats = contractService.getContractStatistics();
-        activeContractsLabel.setText(String.valueOf(stats.getOrDefault("active", 0)));
-        expiringContractsLabel.setText(String.valueOf(stats.getOrDefault("expiring", 0)));
-        expiredContractsLabel.setText(String.valueOf(stats.getOrDefault("expired", 0)));
+        List<Contract> contracts = contractService.getAllContracts();
 
-        // Load contract type statistics
-        Map<String, Integer> typeStats = contractService.getContractTypeStatistics();
+        int activeCount = 0;
+        int expiringCount = 0;
+        int expiredCount = 0;
+        int longTerm = 0;
+        int shortTerm = 0;
+        int probation = 0;
 
-        // Calculate statistics for display
-        int longTerm = typeStats.getOrDefault("Hợp đồng không xác định thời hạn", 0) +
-                typeStats.getOrDefault("Hợp đồng xác định thời hạn 2 năm", 0);
-        int shortTerm = typeStats.getOrDefault("Hợp đồng xác định thời hạn 1 năm", 0) +
-                typeStats.getOrDefault("Hợp đồng thời vụ", 0);
-        int probation = typeStats.getOrDefault("Hợp đồng thử việc", 0);
+        for (Contract contract : contracts) {
+            // Tình trạng hợp đồng
+            if ("Active".equalsIgnoreCase(contract.getStatus())) {
+                activeCount++;
+            }
 
+            if (contract.isExpired()) {
+                expiredCount++;
+            } else if (contract.isExpiringSoon()) {
+                expiringCount++;
+            }
+
+            // Loại hợp đồng
+            String type = contract.getContractTypeName();
+            if (type != null) {
+                switch (type) {
+                    case "Hợp đồng không xác định thời hạn":
+                    case "Hợp đồng xác định thời hạn 2 năm":
+                        longTerm++;
+                        break;
+                    case "Hợp đồng xác định thời hạn 1 năm":
+                    case "Hợp đồng thời vụ":
+                        shortTerm++;
+                        break;
+                    case "Hợp đồng thử việc":
+                        probation++;
+                        break;
+                }
+            }
+        }
+
+        // Gán lên UI
+        activeContractsLabel.setText(String.valueOf(activeCount));
+        expiringContractsLabel.setText(String.valueOf(expiringCount));
+        expiredContractsLabel.setText(String.valueOf(expiredCount));
         longTermContractsLabel.setText(String.valueOf(longTerm));
         shortTermContractsLabel.setText(String.valueOf(shortTerm));
         probationContractsLabel.setText(String.valueOf(probation));
     }
+
 
     private void setupSearchAndFilter() {
         // Add listeners for real-time search and filter
