@@ -44,6 +44,7 @@ public class ContractController implements Initializable {
 
     // Table and Columns
     @FXML private TableView<Contract> contractTable;
+    @FXML private TableColumn<Contract, Integer> indexColumn;
     @FXML private TableColumn<Contract, String> contractCodeColumn;
     @FXML private TableColumn<Contract, String> employeeNameColumn;
     @FXML private TableColumn<Contract, String> contractTypeColumn;
@@ -71,6 +72,18 @@ public class ContractController implements Initializable {
     }
 
     private void initializeTable() {
+        indexColumn.setCellFactory(col -> new TableCell<Contract, Integer>() {
+            @Override
+            protected void updateItem(Integer item, boolean empty) {
+                super.updateItem(item, empty);
+                if (empty) {
+                    setText(null);
+                } else {
+                    setText(String.valueOf(getIndex() + 1));
+                }
+            }
+        });
+        indexColumn.setSortable(false);
         // Set up table columns
         contractCodeColumn.setCellValueFactory(new PropertyValueFactory<>("contractNumber"));
         employeeNameColumn.setCellValueFactory(new PropertyValueFactory<>("employeeName"));
