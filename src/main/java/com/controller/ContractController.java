@@ -49,7 +49,7 @@ public class ContractController implements Initializable {
     @FXML private TableColumn<Contract, String> contractTypeColumn;
     @FXML private TableColumn<Contract, LocalDate> startDateColumn;
     @FXML private TableColumn<Contract, LocalDate> endDateColumn;
-    @FXML private TableColumn<Contract, String> salaryColumn;
+    @FXML private TableColumn<Contract, BigDecimal> salaryColumn;
     @FXML private TableColumn<Contract, String> statusColumn;
     @FXML private TableColumn<Contract, Void> actionColumn;
 
@@ -80,18 +80,30 @@ public class ContractController implements Initializable {
 
         // Custom cell factory for salary column to format currency
         salaryColumn.setCellValueFactory(new PropertyValueFactory<>("salary"));
-        salaryColumn.setCellFactory(column -> new TableCell<Contract, String>() {
+        salaryColumn.setCellFactory(column -> new TableCell<Contract, BigDecimal>() {
             @Override
-            protected void updateItem(String item, boolean empty) {
+            protected void updateItem(BigDecimal item, boolean empty) {
                 super.updateItem(item, empty);
-                if (empty || getTableRow() == null || getTableRow().getItem() == null) {
+                if (empty || item == null) {
                     setText(null);
                 } else {
-                    Contract contract = getTableRow().getItem();
-                    setText(contract.getFormattedSalary());
+                    setText(String.format("%,.0f ₫", item));
                 }
             }
         });
+
+        salaryColumn.setCellFactory(column -> new TableCell<Contract, BigDecimal>() {
+            @Override
+            protected void updateItem(BigDecimal item, boolean empty) {
+                super.updateItem(item, empty);
+                if (empty || item == null) {
+                    setText(null);
+                } else {
+                    setText(String.format("%,.0f ₫", item)); // Hiển thị số có dấu chấm và VND
+                }
+            }
+        });
+
 
         // Custom cell factory for status column with colored indicators
         statusColumn.setCellValueFactory(new PropertyValueFactory<>("status"));
