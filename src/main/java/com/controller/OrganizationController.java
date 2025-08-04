@@ -23,6 +23,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.ResourceBundle;
+import java.util.stream.Collectors;
 
 public class OrganizationController implements Initializable {
 
@@ -55,8 +56,14 @@ public class OrganizationController implements Initializable {
         setupTableStyling();
         setupActionButtons();
         
-        // Load dữ liệu với debug logging
-        refreshAllData();
+        // Load dữ liệu ban đầu (tương tự DocumentController)
+        loadDepartmentData();
+        loadOrganizationChart();
+        updateStatistics();
+        
+        if (DEBUG) {
+            System.out.println("=== ORGANIZATION PAGE INITIALIZED ===");
+        }
     }
 
     private void setupTableColumns() {
@@ -316,9 +323,9 @@ public class OrganizationController implements Initializable {
     }
 
     /**
-     * Refresh toàn bộ dữ liệu để đảm bảo tính nhất quán
+     * Refresh toàn bộ dữ liệu - method chính để load lại trang
      */
-    private void refreshAllData() {
+    public void refreshAllData() {
         // Debug dữ liệu thô từ database
         if (DEBUG) {
             departmentService.debugEmployeeData();
@@ -326,6 +333,7 @@ public class OrganizationController implements Initializable {
         
         loadDepartmentData();
         loadOrganizationChart();
+        updateStatistics();
         
         // Debug: Kiểm tra trạng thái nhân viên chi tiết
         if (DEBUG) {
@@ -341,6 +349,42 @@ public class OrganizationController implements Initializable {
             } catch (Exception e) {
                 System.err.println("Lỗi khi lấy thống kê chi tiết: " + e.getMessage());
             }
+        }
+    }
+
+    /**
+     * Load lại dữ liệu phòng ban (tương tự DocumentController.loadDocumentData)
+     */
+    public void loadDepartmentTable() {
+        loadDepartmentData();
+    }
+
+    /**
+     * Load lại sơ đồ tổ chức
+     */
+    public void loadOrgChart() {
+        loadOrganizationChart();
+    }
+
+    /**
+     * Cập nhật thống kê tổng hợp
+     */
+    public void updateStatistics() {
+        try {
+            var departmentList = departmentService.getAllDepartmentsWithDetails();
+            int totalDepartments = departmentList.size();
+            int totalEmployees = departmentList.stream().mapToInt(Department::getEmployeeCount).sum();
+            
+            updateTotalLabel(totalDepartments);
+            updateDebugInfo(totalDepartments, totalEmployees);
+            
+            if (DEBUG) {
+                System.out.println("=== REFRESH STATISTICS ===");
+                System.out.println("Tổng phòng ban: " + totalDepartments);
+                System.out.println("Tổng nhân viên: " + totalEmployees);
+            }
+        } catch (Exception e) {
+            System.err.println("Lỗi khi cập nhật thống kê: " + e.getMessage());
         }
     }
 
@@ -494,12 +538,26 @@ public class OrganizationController implements Initializable {
 
     private void handleViewEmployees(Department department) {
         try {
-            // Lấy danh sách nhân viên của phòng ban
-            List<Employee> employees = employeeService.searchEmployees(null, department.getId(), null);
+            // Lấy danh sách tất cả nhân viên của phòng ban
+            List<Employee> allEmployees = employeeService.searchEmployees(null, department.getId(), null);
+            
+            // Lọc nhân viên Active và On Leave để nhất quán với logic đếm trong bảng
+            List<Employee> employees = allEmployees.stream()
+                    .filter(emp -> "Active".equals(emp.getEmploymentStatus()) || "On Leave".equals(emp.getEmploymentStatus()))
+                    .collect(Collectors.toList());
+            
+            // Debug info
+            if (DEBUG) {
+                System.out.println("=== VIEW EMPLOYEES DEBUG ===");
+                System.out.println("Phòng ban: " + department.getDepartmentName());
+                System.out.println("Tổng nhân viên: " + allEmployees.size());
+                System.out.println("Nhân viên Active + On Leave: " + employees.size());
+                System.out.println("Số liệu trong bảng: " + department.getEmployeeCount());
+            }
             
             // Tạo dialog hiển thị danh sách nhân viên
             Dialog<Void> dialog = new Dialog<>();
-            dialog.setTitle("👥 Danh sách nhân viên - " + department.getDepartmentName());
+            dialog.setTitle("👥 Danh sách nhân viên thuộc phòng ban - " + department.getDepartmentName());
             dialog.setHeaderText(null);
             dialog.setResizable(true);
             
@@ -555,7 +613,19 @@ public class OrganizationController implements Initializable {
             VBox content = new VBox(15);
             content.setStyle("-fx-padding: 20;");
             
-            Label infoLabel = new Label("📋 Tổng số: " + employees.size() + " nhân viên");
+            // Hiển thị thông tin chi tiết về số lượng nhân viên
+            int workingCount = employees.size();
+            int totalCount = allEmployees.size();
+            
+            // Đếm riêng từng loại để thông tin chi tiết hơn
+            long activeCount = employees.stream().filter(emp -> "Active".equals(emp.getEmploymentStatus())).count();
+            long onLeaveCount = employees.stream().filter(emp -> "On Leave".equals(emp.getEmploymentStatus())).count();
+            
+            String infoText = "📋 Nhân viên thuộc phòng ban: " + workingCount + 
+                            " (Đang làm việc: " + activeCount + ", Nghỉ phép: " + onLeaveCount + ")" +
+                            (totalCount > workingCount ? " | Tổng cộng: " + totalCount + " nhân viên" : "");
+            
+            Label infoLabel = new Label(infoText);
             infoLabel.setStyle("-fx-font-size: 14px; -fx-font-weight: bold; -fx-text-fill: #2c3e50;");
             
             content.getChildren().addAll(infoLabel, employeeTable);
@@ -594,15 +664,15 @@ public class OrganizationController implements Initializable {
                 refreshAllData(); // Sử dụng refreshAllData() thay vì gọi riêng lẻ
             } else {
                 showAlert(Alert.AlertType.ERROR, "Lỗi", 
-                    "Không thể xoá phòng ban!\nPhòng ban này có thể đang có nhân viên hoặc đã xảy ra lỗi.");
+                    "Không thể xoá phòng ban!\nĐã xảy ra lỗi.");
             }
         }
     }
 
     private Dialog<Department> createDepartmentDialog(Department existingDept) {
         Dialog<Department> dialog = new Dialog<>();
-        dialog.setTitle(existingDept == null ? "➕ Thêm phòng ban mới" : "✏️ Chỉnh sửa phòng ban");
-        dialog.setHeaderText(null);
+        dialog.setTitle(existingDept == null ? "➕ Thêm phòng ban mới - Điền đầy đủ thông tin" : "✏️ Chỉnh sửa phòng ban");
+        dialog.setHeaderText(existingDept == null ? "Tất cả các trường thông tin đều bắt buộc" : null);
 
         // Tạo form fields với styling
         TextField codeField = new TextField();
@@ -611,8 +681,9 @@ public class OrganizationController implements Initializable {
         TextField addressField = new TextField();
         TextField phoneField = new TextField();
         TextField emailField = new TextField();
+        ComboBox<Employee> managerComboBox = new ComboBox<>();
 
-        // Styling cho text fields
+        // Styling cho text fields và ComboBox
         String fieldStyle = "-fx-padding: 10; -fx-border-color: #bdc3c7; -fx-border-radius: 5; -fx-background-radius: 5; -fx-min-width: 250px;";
         codeField.setStyle(fieldStyle);
         nameField.setStyle(fieldStyle);
@@ -620,6 +691,95 @@ public class OrganizationController implements Initializable {
         addressField.setStyle(fieldStyle);
         phoneField.setStyle(fieldStyle);
         emailField.setStyle(fieldStyle);
+        managerComboBox.setStyle(fieldStyle);
+        
+        // Load danh sách nhân viên cho ComboBox trưởng phòng
+        try {
+            EmployeeService employeeService = new EmployeeService();
+            List<Employee> allEmployees = employeeService.getAllEmployees();
+            
+            // Tạo ObservableList và thêm option "Không có"
+            ObservableList<Employee> employeeList = FXCollections.observableArrayList();
+            
+            // Thêm option "Không có trưởng phòng"
+            Employee noManager = new Employee();
+            noManager.setId(0);
+            noManager.setFirstName("Không có");
+            noManager.setLastName("trưởng phòng");
+            employeeList.add(noManager);
+            
+            // Chỉ thêm nhân viên Active và On Leave với role_id = 6
+            allEmployees.stream()
+                .filter(emp -> ("Active".equals(emp.getEmploymentStatus()) || "On Leave".equals(emp.getEmploymentStatus())) 
+                            && emp.getRoleId() == 6)
+                .forEach(employeeList::add);
+            
+            managerComboBox.setItems(employeeList);
+            
+            // Custom cell factory để hiển thị tên đầy đủ
+            managerComboBox.setCellFactory(new Callback<ListView<Employee>, ListCell<Employee>>() {
+                @Override
+                public ListCell<Employee> call(ListView<Employee> param) {
+                    return new ListCell<Employee>() {
+                        @Override
+                        protected void updateItem(Employee item, boolean empty) {
+                            super.updateItem(item, empty);
+                            if (empty || item == null) {
+                                setText(null);
+                            } else {
+                                if (item.getId() == 0) {
+                                    setText("❌ " + item.getFirstName() + " " + item.getLastName());
+                                } else {
+                                    setText("👤 " + item.getFullName());
+                                }
+                            }
+                        }
+                    };
+                }
+            });
+            
+            // Button cell factory cho hiển thị trên ComboBox
+            managerComboBox.setButtonCell(new ListCell<Employee>() {
+                @Override
+                protected void updateItem(Employee item, boolean empty) {
+                    super.updateItem(item, empty);
+                    if (empty || item == null) {
+                        setText("Chọn trưởng phòng...");
+                    } else {
+                        if (item.getId() == 0) {
+                            setText("❌ " + item.getFirstName() + " " + item.getLastName());
+                        } else {
+                            setText("👤 " + item.getFullName());
+                        }
+                    }
+                }
+            });
+            
+            // Mặc định chọn "Không có trưởng phòng"
+            managerComboBox.getSelectionModel().selectFirst();
+            
+        } catch (Exception e) {
+            System.err.println("Lỗi load danh sách nhân viên: " + e.getMessage());
+            e.printStackTrace();
+        }
+
+        // Add placeholder text và tooltips (tất cả bắt buộc)
+        codeField.setPromptText("VD: HR, IT, ACC... (Bắt buộc)");
+        nameField.setPromptText("VD: Phòng Nhân sự (Bắt buộc)");
+        descField.setPromptText("Mô tả về phòng ban (Tùy chọn)");
+        addressField.setPromptText("Địa chỉ phòng ban (Bắt buộc)");
+        phoneField.setPromptText("VD: 0912345678, 024.1234567 (Bắt buộc)");
+        emailField.setPromptText("VD: hr@company.com (Bắt buộc)");
+        managerComboBox.setPromptText("Chọn trưởng phòng (Tùy chọn)");
+        
+        // Add tooltips with validation info (TẤT CẢ TRƯỜNG BẮT BUỘC)
+        codeField.setTooltip(new Tooltip("Mã phòng ban (Bắt buộc):\n• Viết tắt tên phòng ban\n• VD: HR, IT, ACC, SALES"));
+        nameField.setTooltip(new Tooltip("Tên phòng ban (Bắt buộc):\n• Tên đầy đủ của phòng ban\n• VD: Phòng Nhân sự, Phòng IT"));
+        descField.setTooltip(new Tooltip("Mô tả phòng ban (Tùy chọn):\n• Chức năng và nhiệm vụ của phòng ban\n• VD: Quản lý nhân sự và đào tạo"));
+        addressField.setTooltip(new Tooltip("Địa chỉ phòng ban (Bắt buộc):\n• Vị trí văn phòng phòng ban\n• VD: Tầng 2, Tòa nhà A"));
+        phoneField.setTooltip(new Tooltip("Số điện thoại (Bắt buộc):\n• Di động: 09x, 08x, 07x, 03x, 05x\n• Cố định: 02x + 7-8 số\n• Có thể có +84 hoặc 84"));
+        emailField.setTooltip(new Tooltip("Email phòng ban (Bắt buộc):\n• Có chứa @ và domain\n• VD: hr@company.com"));
+        managerComboBox.setTooltip(new Tooltip("Trưởng phòng (Tùy chọn):\n• Có thể để trống nếu chưa có\n• Chỉ hiển thị nhân viên Active/On Leave\n• Có thể thay đổi sau"));
 
         // Điền dữ liệu nếu đang edit
         if (existingDept != null) {
@@ -629,6 +789,19 @@ public class OrganizationController implements Initializable {
             addressField.setText(existingDept.getAddress());
             phoneField.setText(existingDept.getPhone());
             emailField.setText(existingDept.getEmail());
+            
+            // Set trưởng phòng nếu có
+            if (existingDept.getManagerId() != null && existingDept.getManagerId() > 0) {
+                for (Employee emp : managerComboBox.getItems()) {
+                    if (emp.getId() == existingDept.getManagerId()) {
+                        managerComboBox.getSelectionModel().select(emp);
+                        break;
+                    }
+                }
+            } else {
+                // Chọn "Không có trưởng phòng" (item đầu tiên)
+                managerComboBox.getSelectionModel().selectFirst();
+            }
         }
 
         // Layout với GridPane để label và field cùng hàng
@@ -638,19 +811,22 @@ public class OrganizationController implements Initializable {
         form.setVgap(15); // Khoảng cách dọc giữa các rows
         
         String labelStyle = "-fx-font-weight: bold; -fx-text-fill: #2c3e50; -fx-min-width: 120px;";
+        String requiredStyle = "-fx-font-weight: bold; -fx-text-fill: #2c3e50; -fx-min-width: 120px;";
         
-        Label codeLabel = new Label("🏷️ Mã phòng ban:");
-        codeLabel.setStyle(labelStyle);
-        Label nameLabel = new Label("🏢 Tên phòng ban:");
-        nameLabel.setStyle(labelStyle);
+        Label codeLabel = new Label("🏷️ Mã phòng ban: *");
+        codeLabel.setStyle(requiredStyle);
+        Label nameLabel = new Label("🏢 Tên phòng ban: *");
+        nameLabel.setStyle(requiredStyle);
         Label descLabel = new Label("📝 Mô tả:");
         descLabel.setStyle(labelStyle);
-        Label addressLabel = new Label("🏠 Địa chỉ:");
-        addressLabel.setStyle(labelStyle);
-        Label phoneLabel = new Label("📞 Điện thoại:");
-        phoneLabel.setStyle(labelStyle);
-        Label emailLabel = new Label("📧 Email:");
-        emailLabel.setStyle(labelStyle);
+        Label addressLabel = new Label("🏠 Địa chỉ: *");
+        addressLabel.setStyle(requiredStyle);
+        Label phoneLabel = new Label("📞 Điện thoại: *");
+        phoneLabel.setStyle(requiredStyle);
+        Label emailLabel = new Label("📧 Email: *");
+        emailLabel.setStyle(requiredStyle);
+        Label managerLabel = new Label("👤 Trưởng phòng:");
+        managerLabel.setStyle(labelStyle); // Không bắt buộc nên không có dấu *
         
         // Thêm các components vào GridPane theo format (column, row)
         form.add(codeLabel, 0, 0);
@@ -665,17 +841,142 @@ public class OrganizationController implements Initializable {
         form.add(phoneField, 1, 4);
         form.add(emailLabel, 0, 5);
         form.add(emailField, 1, 5);
+        form.add(managerLabel, 0, 6);
+        form.add(managerComboBox, 1, 6);
 
         dialog.getDialogPane().setContent(form);
         dialog.getDialogPane().getButtonTypes().addAll(ButtonType.OK, ButtonType.CANCEL);
         
+        // Get OK button for validation
+        javafx.scene.Node okButton = dialog.getDialogPane().lookupButton(ButtonType.OK);
+        
         // Styling cho dialog buttons
-        dialog.getDialogPane().lookupButton(ButtonType.OK).setStyle(
+        okButton.setStyle(
             "-fx-background-color: #27ae60; -fx-text-fill: white; -fx-font-weight: bold; -fx-padding: 8 16; -fx-background-radius: 5;"
         );
         dialog.getDialogPane().lookupButton(ButtonType.CANCEL).setStyle(
             "-fx-background-color: #95a5a6; -fx-text-fill: white; -fx-font-weight: bold; -fx-padding: 8 16; -fx-background-radius: 5;"
         );
+
+        // Add validation logic - CHỈ CHECK EMPTY ĐỂ ENABLE/DISABLE OK BUTTON
+        Runnable validateForm = () -> {
+            boolean hasRequiredFields = true;
+            
+            // Style mặc định cho tất cả trường
+            String defaultStyle = "-fx-padding: 10; -fx-border-color: #bdc3c7; -fx-border-radius: 5; -fx-background-radius: 5; -fx-min-width: 250px;";
+            
+            // Chỉ kiểm tra có text trong các trường bắt buộc (không kiểm tra format)
+            String code = codeField.getText().trim();
+            String name = nameField.getText().trim();
+            String address = addressField.getText().trim();
+            String email = emailField.getText().trim();
+            String phone = phoneField.getText().trim();
+            
+            // Set style mặc định cho tất cả trường
+            codeField.setStyle(defaultStyle);
+            nameField.setStyle(defaultStyle);
+            descField.setStyle(defaultStyle);
+            addressField.setStyle(defaultStyle);
+            emailField.setStyle(defaultStyle);
+            phoneField.setStyle(defaultStyle);
+            managerComboBox.setStyle(defaultStyle);
+            
+            // Chỉ check empty - không check format
+            if (code.isEmpty() || name.isEmpty() || address.isEmpty() || email.isEmpty() || phone.isEmpty()) {
+                hasRequiredFields = false;
+            }
+            
+            // Tự động chọn "Không có trưởng phòng" nếu chưa chọn gì
+            Employee selectedManager = managerComboBox.getSelectionModel().getSelectedItem();
+            if (selectedManager == null) {
+                managerComboBox.getSelectionModel().selectFirst();
+            }
+            
+            // Reset header text
+            dialog.setHeaderText(existingDept == null ? "Tất cả các trường thông tin đều bắt buộc" : null);
+            
+            // Enable OK button chỉ khi có đủ text trong các trường bắt buộc
+            okButton.setDisable(!hasRequiredFields);
+        };
+        
+        // Add listeners for real-time validation (TẤT CẢ TRƯỜNG)
+        codeField.textProperty().addListener((obs, oldVal, newVal) -> validateForm.run());
+        nameField.textProperty().addListener((obs, oldVal, newVal) -> validateForm.run());
+        // descField không cần validation vì không bắt buộc
+        addressField.textProperty().addListener((obs, oldVal, newVal) -> validateForm.run());
+        emailField.textProperty().addListener((obs, oldVal, newVal) -> validateForm.run());
+        phoneField.textProperty().addListener((obs, oldVal, newVal) -> validateForm.run());
+        managerComboBox.valueProperty().addListener((obs, oldVal, newVal) -> validateForm.run());
+        
+        // Initial validation
+        validateForm.run();
+
+        // Override OK button behavior để validate đầy đủ khi submit
+        okButton.addEventFilter(javafx.event.ActionEvent.ACTION, event -> {
+            // Thực hiện validation đầy đủ khi bấm OK
+            StringBuilder errorMessages = new StringBuilder();
+            boolean isFormValid = true;
+            
+            // Get values
+            String code = codeField.getText().trim();
+            String name = nameField.getText().trim();
+            String address = addressField.getText().trim();
+            String email = emailField.getText().trim();
+            String phone = phoneField.getText().trim();
+            
+            // Validate từng trường
+            
+            // 1. Kiểm tra trống
+            if (code.isEmpty()) {
+                errorMessages.append("• Mã phòng ban không được để trống\n");
+                isFormValid = false;
+            }
+            if (name.isEmpty()) {
+                errorMessages.append("• Tên phòng ban không được để trống\n");
+                isFormValid = false;
+            }
+            if (address.isEmpty()) {
+                errorMessages.append("• Địa chỉ không được để trống\n");
+                isFormValid = false;
+            }
+            if (email.isEmpty()) {
+                errorMessages.append("• Email không được để trống\n");
+                isFormValid = false;
+            }
+            if (phone.isEmpty()) {
+                errorMessages.append("• Số điện thoại không được để trống\n");
+                isFormValid = false;
+            }
+            
+            // 2. Kiểm tra format nếu không trống
+            if (!code.isEmpty() && (code.length() < 2 || code.length() > 10)) {
+                errorMessages.append("• Mã phòng ban phải từ 2-10 ký tự\n");
+                isFormValid = false;
+            }
+            if (!name.isEmpty() && (name.length() < 3 || name.length() > 100)) {
+                errorMessages.append("• Tên phòng ban phải từ 3-100 ký tự\n");
+                isFormValid = false;
+            }
+            if (!address.isEmpty() && address.length() < 5) {
+                errorMessages.append("• Địa chỉ phải có ít nhất 5 ký tự\n");
+                isFormValid = false;
+            }
+            if (!email.isEmpty() && !isValidEmail(email)) {
+                errorMessages.append("• Email không đúng định dạng (vd: hr@company.com)\n");
+                isFormValid = false;
+            }
+            if (!phone.isEmpty() && !isValidPhone(phone)) {
+                errorMessages.append("• Số điện thoại không đúng định dạng VN (vd: 0987654321)\n");
+                isFormValid = false;
+            }
+            
+            // Nếu có lỗi, hiển thị thông báo và ngăn submit
+            if (!isFormValid) {
+                showAlert(Alert.AlertType.WARNING, "Thông tin chưa hợp lệ", 
+                    "Vui lòng kiểm tra lại thông tin:\n\n" + errorMessages.toString());
+                event.consume(); // Ngăn dialog đóng
+            }
+        });
 
         // Convert result
         dialog.setResultConverter(dialogButton -> {
@@ -687,6 +988,15 @@ public class OrganizationController implements Initializable {
                 dept.setAddress(addressField.getText().trim());
                 dept.setPhone(phoneField.getText().trim());
                 dept.setEmail(emailField.getText().trim());
+                
+                // Set manager ID
+                Employee selectedManager = managerComboBox.getSelectionModel().getSelectedItem();
+                if (selectedManager != null && selectedManager.getId() > 0) {
+                    dept.setManagerId(selectedManager.getId());
+                } else {
+                    dept.setManagerId(null); // Không có trưởng phòng
+                }
+                
                 return dept;
             }
             return null;
@@ -701,6 +1011,65 @@ public class OrganizationController implements Initializable {
         alert.setHeaderText(null);
         alert.setContentText(message);
         alert.showAndWait();
+    }
+
+    /**
+     * Validate email format
+     */
+    private boolean isValidEmail(String email) {
+        if (email == null || email.trim().isEmpty()) {
+            return false;
+        }
+        
+        // Simple email regex pattern
+        String emailRegex = "^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\\.[a-zA-Z]{2,}$";
+        return email.matches(emailRegex);
+    }
+
+    /**
+     * Validate phone number (Vietnamese format)
+     */
+    private boolean isValidPhone(String phone) {
+        if (phone == null || phone.trim().isEmpty()) {
+            return false;
+        }
+        
+        // Remove all spaces, dashes, dots, parentheses
+        String cleanPhone = phone.replaceAll("[\\s\\-\\.\\(\\)]", "");
+        
+        // Vietnamese phone number patterns:
+        // - Mobile: 09xxxxxxxx, 08xxxxxxxx, 07xxxxxxxx, 03xxxxxxxx, 05xxxxxxxx
+        // - Landline: 02xxxxxxxx (8-9 digits after 02)
+        // - International format: +84xxxxxxxxx or 84xxxxxxxxx
+        String phoneRegex = "^(\\+84|84|0)(3[2-9]|5[689]|7[06-9]|8[1-689]|9[0-46-9])[0-9]{7}$|^(\\+84|84|0)(2[0-9])[0-9]{7,8}$";
+        
+        return cleanPhone.matches(phoneRegex);
+    }
+
+    /**
+     * Method public để refresh từ bên ngoài (tương tự DocumentController)
+     * Có thể được gọi từ MainController khi user quay lại trang
+     */
+    public void refreshPage() {
+        if (DEBUG) {
+            System.out.println("=== EXTERNAL REFRESH TRIGGERED ===");
+        }
+        refreshAllData();
+    }
+
+    /**
+     * Refresh chỉ bảng phòng ban (nhanh hơn khi chỉ cần update table)
+     */
+    public void refreshTableOnly() {
+        loadDepartmentData();
+        updateStatistics();
+    }
+
+    /**
+     * Refresh chỉ sơ đồ tổ chức (nhanh hơn khi chỉ cần update chart)  
+     */
+    public void refreshChartOnly() {
+        loadOrganizationChart();
     }
 
     // Button hover effects

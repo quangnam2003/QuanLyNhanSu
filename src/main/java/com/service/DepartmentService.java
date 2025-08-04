@@ -41,7 +41,7 @@ public class DepartmentService {
         String sql = """
             SELECT d.*, 
                    CONCAT(e.first_name, ' ', e.last_name) as manager_name,
-                   (SELECT COUNT(*) FROM employees emp WHERE emp.department_id = d.id AND emp.employment_status = 'Active') as employee_count
+                   (SELECT COUNT(*) FROM employees emp WHERE emp.department_id = d.id AND emp.employment_status IN ('Active', 'On Leave')) as employee_count
             FROM departments d 
             LEFT JOIN employees e ON d.manager_id = e.id 
             ORDER BY d.department_code
@@ -206,7 +206,7 @@ public class DepartmentService {
         String sql = """
             SELECT d.department_name, COUNT(e.id) as employee_count 
             FROM departments d 
-            LEFT JOIN employees e ON d.id = e.department_id AND e.employment_status = 'Active'
+            LEFT JOIN employees e ON d.id = e.department_id AND e.employment_status IN ('Active', 'On Leave')
             GROUP BY d.id, d.department_name 
             ORDER BY d.department_name
         """;

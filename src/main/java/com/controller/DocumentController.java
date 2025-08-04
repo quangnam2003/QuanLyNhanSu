@@ -13,12 +13,13 @@ import javafx.scene.control.*;
 import javafx.scene.control.cell.PropertyValueFactory;
 import javafx.scene.layout.GridPane;
 import javafx.scene.layout.HBox;
+import javafx.stage.FileChooser;
 import javafx.util.Callback;
 
 import java.awt.Desktop;
-import java.io.IOException;
-import java.net.URI;
+import java.io.*;
 import java.net.URL;
+import java.nio.file.Files;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
@@ -31,13 +32,13 @@ public class DocumentController implements Initializable {
     @FXML private TableColumn<Document, Integer> colId;
     @FXML private TableColumn<Document, String> colTitle;
     @FXML private TableColumn<Document, String> colFileName;
-    @FXML private TableColumn<Document, String> colFileUrl;
-    @FXML private TableColumn<Document, String> colDocumentType;
-    @FXML private TableColumn<Document, String> colUploadedAt;
+    @FXML private TableColumn<Document, String> colFileSize;
+    @FXML private TableColumn<Document, String> colCategory;
+    @FXML private TableColumn<Document, String> colLastUpdated;
     @FXML private TableColumn<Document, Void> actionColumn;
 
     @FXML private TextField searchField;
-    @FXML private ComboBox<String> documentTypeFilter;
+    @FXML private ComboBox<String> categoryFilter;
     @FXML private Button btnAddDocument;
 
     @FXML private Label lblTotal;
@@ -49,7 +50,7 @@ public class DocumentController implements Initializable {
     public void initialize(URL location, ResourceBundle resources) {
         setupTableColumns();
         loadDocumentData();
-        loadDocumentTypeFilter();
+        loadCategoryFilter();
         setupSearchAndFilter();
         setupActionColumn();
         updateStatistics();
@@ -59,27 +60,44 @@ public class DocumentController implements Initializable {
         colId.setCellValueFactory(new PropertyValueFactory<>("id"));
         colTitle.setCellValueFactory(new PropertyValueFactory<>("title"));
         colFileName.setCellValueFactory(new PropertyValueFactory<>("fileName"));
-        colFileUrl.setCellValueFactory(new PropertyValueFactory<>("fileUrl"));
-        colDocumentType.setCellValueFactory(new PropertyValueFactory<>("documentType"));
         
-        // Format uploaded date
-        colUploadedAt.setCellValueFactory(cellData -> {
-            LocalDateTime uploadedAt = cellData.getValue().getUploadedAt();
-            if (uploadedAt != null) {
+        // Format file size
+        colFileSize.setCellValueFactory(cellData -> {
+            byte[] fileData = cellData.getValue().getFileData();
+            if (fileData != null) {
+                return new SimpleStringProperty(formatFileSize(fileData.length));
+            }
+            return new SimpleStringProperty("N/A");
+        });
+        
+        colCategory.setCellValueFactory(new PropertyValueFactory<>("category"));
+        
+        // Format last updated date
+        colLastUpdated.setCellValueFactory(cellData -> {
+            LocalDateTime lastUpdated = cellData.getValue().getLastUpdated();
+            if (lastUpdated != null) {
                 DateTimeFormatter formatter = DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm");
-                return new SimpleStringProperty(uploadedAt.format(formatter));
+                return new SimpleStringProperty(lastUpdated.format(formatter));
             }
             return new SimpleStringProperty("");
         });
 
-        // Set column widths
-        colId.setPrefWidth(80);
-        colTitle.setPrefWidth(200);
-        colFileName.setPrefWidth(150);
-        colFileUrl.setPrefWidth(250);
-        colDocumentType.setPrefWidth(120);
-        colUploadedAt.setPrefWidth(150);
+        // Set column widths and visibility
+        colId.setVisible(false);  // Ẩn cột ID
+        colFileSize.setVisible(false);  // Ẩn cột kích thước
+        
+        colTitle.setPrefWidth(250);  // Tăng width cho tiêu đề
+        colFileName.setPrefWidth(200);  // Tăng width cho tên file
+        colCategory.setPrefWidth(150);  // Tăng width cho danh mục
+        colLastUpdated.setPrefWidth(180);  // Tăng width cho ngày cập nhật
         actionColumn.setPrefWidth(150);
+    }
+    
+    private String formatFileSize(long bytes) {
+        if (bytes < 1024) return bytes + " B";
+        int exp = (int) (Math.log(bytes) / Math.log(1024));
+        String pre = "KMGTPE".charAt(exp-1) + "";
+        return String.format("%.1f %sB", bytes / Math.pow(1024, exp), pre);
     }
 
     private void setupActionColumn() {
@@ -87,22 +105,22 @@ public class DocumentController implements Initializable {
             @Override
             public TableCell<Document, Void> call(final TableColumn<Document, Void> param) {
                 return new TableCell<>() {
-                    private final Button btnView = new Button("Xem");
+                    private final Button btnDownload = new Button("Tải về");
                     private final Button btnEdit = new Button("Sửa");
                     private final Button btnDelete = new Button("Xóa");
-                    private final HBox hBox = new HBox(btnView, btnEdit, btnDelete);
+                    private final HBox hBox = new HBox(btnDownload, btnEdit, btnDelete);
 
                     {
-                        btnView.setStyle("-fx-background-color: #27ae60; -fx-text-fill: white; -fx-background-radius: 5; -fx-padding: 5 10;");
+                        btnDownload.setStyle("-fx-background-color: #27ae60; -fx-text-fill: white; -fx-background-radius: 5; -fx-padding: 5 10;");
                         btnEdit.setStyle("-fx-background-color: #f39c12; -fx-text-fill: white; -fx-background-radius: 5; -fx-padding: 5 10;");
                         btnDelete.setStyle("-fx-background-color: #e74c3c; -fx-text-fill: white; -fx-background-radius: 5; -fx-padding: 5 10;");
 
                         hBox.setSpacing(5);
                         hBox.setAlignment(Pos.CENTER);
 
-                        btnView.setOnAction(event -> {
+                        btnDownload.setOnAction(event -> {
                             Document document = getTableView().getItems().get(getIndex());
-                            handleView(document);
+                            handleDownload(document);
                         });
 
                         btnEdit.setOnAction(event -> {
@@ -137,7 +155,7 @@ public class DocumentController implements Initializable {
         });
 
         // Filter functionality
-        documentTypeFilter.setOnAction(e -> filterDocuments());
+        categoryFilter.setOnAction(e -> filterDocuments());
     }
 
     private void loadDocumentData() {
@@ -147,18 +165,18 @@ public class DocumentController implements Initializable {
         documentTable.setItems(documentList);
     }
 
-    private void loadDocumentTypeFilter() {
-        List<String> documentTypes = documentService.getAllDocumentTypes();
-        documentTypes.add(0, "Tất cả");
-        documentTypeFilter.setItems(FXCollections.observableArrayList(documentTypes));
-        documentTypeFilter.setValue("Tất cả");
+    private void loadCategoryFilter() {
+        List<String> categories = documentService.getAllCategories();
+        categories.add(0, "Tất cả");
+        categoryFilter.setItems(FXCollections.observableArrayList(categories));
+        categoryFilter.setValue("Tất cả");
     }
 
     private void filterDocuments() {
         String keyword = searchField.getText();
-        String selectedType = documentTypeFilter.getValue();
+        String selectedCategory = categoryFilter.getValue();
         
-        List<Document> filteredDocuments = documentService.searchDocuments(keyword, selectedType);
+        List<Document> filteredDocuments = documentService.searchDocuments(keyword, selectedCategory);
         documentList.clear();
         documentList.addAll(filteredDocuments);
         documentTable.setItems(documentList);
@@ -178,20 +196,25 @@ public class DocumentController implements Initializable {
         showEditDocumentDialog(document);
     }
 
-    private void handleView(Document document) {
-        // Open document URL in browser
-        if (document.getFileUrl() != null && !document.getFileUrl().isEmpty()) {
-            try {
-                if (Desktop.isDesktopSupported()) {
-                    Desktop.getDesktop().browse(URI.create(document.getFileUrl()));
-                } else {
-                    showAlert(Alert.AlertType.WARNING, "Cảnh báo", "Hệ thống không hỗ trợ mở URL trực tiếp!");
+    private void handleDownload(Document document) {
+        // Download document file
+        byte[] fileData = documentService.getDocumentFile(document.getId());
+        if (fileData != null && fileData.length > 0) {
+            FileChooser fileChooser = new FileChooser();
+            fileChooser.setTitle("Lưu tài liệu");
+            fileChooser.setInitialFileName(document.getFileName());
+            
+            File file = fileChooser.showSaveDialog(documentTable.getScene().getWindow());
+            if (file != null) {
+                try {
+                    Files.write(file.toPath(), fileData);
+                    showAlert(Alert.AlertType.INFORMATION, "Thành công", "Tải xuống tài liệu thành công!");
+                } catch (IOException e) {
+                    showAlert(Alert.AlertType.ERROR, "Lỗi", "Không thể lưu tài liệu: " + e.getMessage());
                 }
-            } catch (IOException e) {
-                showAlert(Alert.AlertType.ERROR, "Lỗi", "Không thể mở tài liệu!");
             }
         } else {
-            showAlert(Alert.AlertType.WARNING, "Cảnh báo", "URL tài liệu không hợp lệ!");
+            showAlert(Alert.AlertType.WARNING, "Cảnh báo", "Không tìm thấy dữ liệu tài liệu!");
         }
     }
 
@@ -227,30 +250,38 @@ public class DocumentController implements Initializable {
         GridPane grid = new GridPane();
         grid.setHgap(10);
         grid.setVgap(10);
-        grid.setPadding(new Insets(20, 150, 10, 10));
+        grid.setPadding(new Insets(20, 100, 10, 10)); // Giảm padding bên phải để có thêm không gian
 
         TextField titleField = new TextField();
         titleField.setPromptText("Tiêu đề tài liệu");
-        TextField fileNameField = new TextField();
-        fileNameField.setPromptText("Tên file");
-        TextField fileUrlField = new TextField();
-        fileUrlField.setPromptText("URL tài liệu");
-        ComboBox<String> documentTypeCombo = new ComboBox<>();
+        Label fileLabel = new Label("Chưa chọn file");
+        fileLabel.setWrapText(true); // Cho phép xuống dòng
+        fileLabel.setMaxWidth(300); // Tăng width tối đa
+        fileLabel.setPrefWidth(300);
+        Button chooseFileBtn = new Button("Chọn file");
+        Button removeFileBtn = new Button("Xóa");
+        removeFileBtn.setVisible(false); // Ẩn ban đầu
+        removeFileBtn.setStyle("-fx-background-color: #e74c3c; -fx-text-fill: white; -fx-background-radius: 5; -fx-padding: 5 10;");
+        ComboBox<String> categoryCombo = new ComboBox<>();
         
-        // Load document types
-        List<String> documentTypes = documentService.getAllDocumentTypes();
-        documentTypes.addAll(List.of("Policy", "HR", "Finance", "Training", "General"));
-        documentTypeCombo.setItems(FXCollections.observableArrayList(documentTypes));
-        documentTypeCombo.setPromptText("Chọn loại tài liệu");
+        // Load categories
+        List<String> categories = getAvailableCategories();
+        categoryCombo.setItems(FXCollections.observableArrayList(categories));
+        categoryCombo.setPromptText("Chọn danh mục");
 
+        final File[] selectedFile = new File[1];
+
+        // Tạo HBox để chứa button chọn file và xóa file
+        HBox fileButtonBox = new HBox(10);
+        fileButtonBox.getChildren().addAll(chooseFileBtn, removeFileBtn);
+        
         grid.add(new Label("Tiêu đề:"), 0, 0);
         grid.add(titleField, 1, 0);
-        grid.add(new Label("Tên file:"), 0, 1);
-        grid.add(fileNameField, 1, 1);
-        grid.add(new Label("URL:"), 0, 2);
-        grid.add(fileUrlField, 1, 2);
-        grid.add(new Label("Loại tài liệu:"), 0, 3);
-        grid.add(documentTypeCombo, 1, 3);
+        grid.add(new Label("File:"), 0, 1);
+        grid.add(fileButtonBox, 1, 1);
+        grid.add(fileLabel, 1, 2);
+        grid.add(new Label("Danh mục:"), 0, 3);
+        grid.add(categoryCombo, 1, 3);
 
         dialog.getDialogPane().setContent(grid);
 
@@ -258,47 +289,88 @@ public class DocumentController implements Initializable {
         javafx.scene.Node saveButton = dialog.getDialogPane().lookupButton(saveButtonType);
         saveButton.setDisable(true);
 
-        // Do some validation (disable save button if required fields are empty)
-        titleField.textProperty().addListener((observable, oldValue, newValue) -> {
-            saveButton.setDisable(newValue.trim().isEmpty() || fileNameField.getText().trim().isEmpty() 
-                || fileUrlField.getText().trim().isEmpty() || documentTypeCombo.getValue() == null);
+        // Validation logic to enable/disable save button
+        Runnable validateForm = () -> {
+            boolean isValid = !titleField.getText().trim().isEmpty() 
+                && selectedFile[0] != null 
+                && categoryCombo.getValue() != null;
+            saveButton.setDisable(!isValid);
+        };
+
+        // Chạy validation ban đầu
+        validateForm.run();
+
+        // Setup file chooser action AFTER validateForm is defined
+        chooseFileBtn.setOnAction(e -> {
+            FileChooser fileChooser = new FileChooser();
+            fileChooser.setTitle("Chọn tài liệu");
+            
+            File file = fileChooser.showOpenDialog(dialog.getDialogPane().getScene().getWindow());
+            if (file != null) {
+                // Kiểm tra loại file
+                if (!isValidFileType(file.getName())) {
+                    showAlert(Alert.AlertType.ERROR, "Loại file không hỗ trợ", 
+                        "Chỉ cho phép các loại file: PDF (.pdf), Text (.txt), Word (.doc, .docx), Excel (.xls, .xlsx)");
+                    return;
+                }
+                
+                // Kiểm tra kích thước file (700KB limit)
+                long fileSizeInKB = file.length() / 1024;
+                if (file.length() > 700 * 1024) {
+                    showAlert(Alert.AlertType.WARNING, "File quá lớn", 
+                        "Kích thước file: " + fileSizeInKB +
+                                "KB\nKích thước tối đa cho phép: 700KB" +
+                                "\nVui lòng chọn file khác .");
+                    return;
+                }
+                
+                // File hợp lệ
+                selectedFile[0] = file;
+                fileLabel.setText(file.getName() + " (" + formatFileSize(file.length()) + ")");
+                removeFileBtn.setVisible(true); // Hiển thị button xóa
+                validateForm.run(); // Kích hoạt validation sau khi chọn file
+            }
         });
-        fileNameField.textProperty().addListener((observable, oldValue, newValue) -> {
-            saveButton.setDisable(newValue.trim().isEmpty() || titleField.getText().trim().isEmpty() 
-                || fileUrlField.getText().trim().isEmpty() || documentTypeCombo.getValue() == null);
+
+        // Setup remove file button action
+        removeFileBtn.setOnAction(e -> {
+            selectedFile[0] = null; // Reset file selection
+            fileLabel.setText("Chưa chọn file"); // Reset label
+            removeFileBtn.setVisible(false); // Ẩn button xóa
+            validateForm.run(); // Chạy validation để disable nút Lưu
         });
-        fileUrlField.textProperty().addListener((observable, oldValue, newValue) -> {
-            saveButton.setDisable(newValue.trim().isEmpty() || titleField.getText().trim().isEmpty() 
-                || fileNameField.getText().trim().isEmpty() || documentTypeCombo.getValue() == null);
-        });
-        documentTypeCombo.valueProperty().addListener((observable, oldValue, newValue) -> {
-            saveButton.setDisable(newValue == null || titleField.getText().trim().isEmpty() 
-                || fileNameField.getText().trim().isEmpty() || fileUrlField.getText().trim().isEmpty());
-        });
+
+        titleField.textProperty().addListener((observable, oldValue, newValue) -> validateForm.run());
+        categoryCombo.valueProperty().addListener((observable, oldValue, newValue) -> validateForm.run());
 
         // Convert the result to a document when the save button is clicked
         dialog.setResultConverter(dialogButton -> {
-            if (dialogButton == saveButtonType) {
+            if (dialogButton == saveButtonType && selectedFile[0] != null) {
+                try {
+                    byte[] fileData = Files.readAllBytes(selectedFile[0].toPath());
                 Document document = new Document();
                 document.setTitle(titleField.getText().trim());
-                document.setFileName(fileNameField.getText().trim());
-                document.setFileUrl(fileUrlField.getText().trim());
-                document.setDocumentType(documentTypeCombo.getValue());
-                document.setUploadedAt(LocalDateTime.now());
+                    document.setFileName(selectedFile[0].getName());
+                    document.setFileData(fileData);
+                    document.setCategory(categoryCombo.getValue());
+                    document.setLastUpdated(LocalDateTime.now());
                 return document;
+                } catch (IOException e) {
+                    showAlert(Alert.AlertType.ERROR, "Lỗi", "Không thể đọc file: " + e.getMessage());
+                }
             }
             return null;
         });
 
         Optional<Document> result = dialog.showAndWait();
         result.ifPresent(document -> {
-            boolean success = documentService.addDocument(document);
-            if (success) {
+            String saveResult = documentService.addDocument(document);
+            if ("SUCCESS".equals(saveResult)) {
                 showAlert(Alert.AlertType.INFORMATION, "Thành công", "Thêm tài liệu thành công!");
                 loadDocumentData();
                 updateStatistics();
             } else {
-                showAlert(Alert.AlertType.ERROR, "Lỗi", "Không thể thêm tài liệu!");
+                showAlert(Alert.AlertType.ERROR, "Lỗi", saveResult);
             }
         });
     }
@@ -316,72 +388,120 @@ public class DocumentController implements Initializable {
         GridPane grid = new GridPane();
         grid.setHgap(10);
         grid.setVgap(10);
-        grid.setPadding(new Insets(20, 150, 10, 10));
+        grid.setPadding(new Insets(20, 100, 10, 10)); // Giảm padding bên phải để có thêm không gian
 
         TextField titleField = new TextField(document.getTitle());
-        TextField fileNameField = new TextField(document.getFileName());
-        TextField fileUrlField = new TextField(document.getFileUrl());
-        ComboBox<String> documentTypeCombo = new ComboBox<>();
+        Label fileLabel = new Label(formatFileName(document.getFileName()));
+        fileLabel.setWrapText(true); // Cho phép xuống dòng
+        fileLabel.setMaxWidth(300); // Tăng width tối đa  
+        fileLabel.setPrefWidth(300);
         
-        // Load document types
-        List<String> documentTypes = documentService.getAllDocumentTypes();
-        documentTypes.addAll(List.of("Policy", "HR", "Finance", "Training", "General"));
-        documentTypeCombo.setItems(FXCollections.observableArrayList(documentTypes));
-        documentTypeCombo.setValue(document.getDocumentType());
+        // Khai báo tooltip ở scope method để có thể reuse
+        Tooltip fileTooltip = new Tooltip(document.getFileName());
+        fileLabel.setTooltip(fileTooltip);
+        
+        Button chooseFileBtn = new Button("Thay đổi file");
+        ComboBox<String> categoryCombo = new ComboBox<>();
+        
+        // Load categories
+        List<String> categories = getAvailableCategories();
+        categoryCombo.setItems(FXCollections.observableArrayList(categories));
+        categoryCombo.setValue(document.getCategory());
+
+        final File[] selectedFile = new File[1];
 
         grid.add(new Label("Tiêu đề:"), 0, 0);
         grid.add(titleField, 1, 0);
-        grid.add(new Label("Tên file:"), 0, 1);
-        grid.add(fileNameField, 1, 1);
-        grid.add(new Label("URL:"), 0, 2);
-        grid.add(fileUrlField, 1, 2);
-        grid.add(new Label("Loại tài liệu:"), 0, 3);
-        grid.add(documentTypeCombo, 1, 3);
+        grid.add(new Label("File hiện tại:"), 0, 1);
+        grid.add(fileLabel, 1, 1);
+        grid.add(new Label("Thay đổi file:"), 0, 2);
+        grid.add(chooseFileBtn, 1, 2);
+        grid.add(new Label("Danh mục:"), 0, 3);
+        grid.add(categoryCombo, 1, 3);
 
         dialog.getDialogPane().setContent(grid);
 
         // Enable/Disable save button depending on whether fields are filled
         javafx.scene.Node saveButton = dialog.getDialogPane().lookupButton(saveButtonType);
         
-        // Do some validation (disable save button if required fields are empty)
-        titleField.textProperty().addListener((observable, oldValue, newValue) -> {
-            saveButton.setDisable(newValue.trim().isEmpty() || fileNameField.getText().trim().isEmpty() 
-                || fileUrlField.getText().trim().isEmpty() || documentTypeCombo.getValue() == null);
+        // Validation logic
+        Runnable validateForm = () -> {
+            boolean isValid = !titleField.getText().trim().isEmpty() && categoryCombo.getValue() != null;
+            saveButton.setDisable(!isValid);
+        };
+
+        // Chạy validation ban đầu (cho edit dialog, chỉ cần title và category)
+        validateForm.run();
+
+        // Setup file chooser action AFTER validateForm is defined
+        chooseFileBtn.setOnAction(e -> {
+            FileChooser fileChooser = new FileChooser();
+            fileChooser.setTitle("Chọn file mới");
+            
+            File file = fileChooser.showOpenDialog(dialog.getDialogPane().getScene().getWindow());
+            if (file != null) {
+                // Kiểm tra loại file
+                if (!isValidFileType(file.getName())) {
+                    showAlert(Alert.AlertType.ERROR, "Loại file không hỗ trợ", 
+                        "Chỉ cho phép các loại file: PDF (.pdf), Text (.txt), Word (.doc, .docx), Excel (.xls, .xlsx)");
+                    return;
+                }
+                
+                // Kiểm tra kích thước file (700KB limit)
+                long fileSizeInKB = file.length() / 1024;
+                if (file.length() > 700 * 1024) {
+                    showAlert(Alert.AlertType.WARNING, "File quá lớn", 
+                        "Kích thước file: " + fileSizeInKB + "KB\nKích thước tối đa cho phép: 700KB\nVui lòng chọn file khác hoặc nén file.");
+                    return;
+                }
+                
+                // File hợp lệ
+                selectedFile[0] = file;
+                String displayText = formatFileName(file.getName()) + " (" + formatFileSize(file.length()) + ")";
+                fileLabel.setText(displayText);
+                
+                // Cập nhật tooltip
+                fileTooltip.setText(file.getName() + "\nKích thước: " + formatFileSize(file.length()));
+                fileLabel.setTooltip(fileTooltip);
+                
+                validateForm.run(); // Kích hoạt validation sau khi chọn file (không bắt buộc cho edit)
+            }
         });
-        fileNameField.textProperty().addListener((observable, oldValue, newValue) -> {
-            saveButton.setDisable(newValue.trim().isEmpty() || titleField.getText().trim().isEmpty() 
-                || fileUrlField.getText().trim().isEmpty() || documentTypeCombo.getValue() == null);
-        });
-        fileUrlField.textProperty().addListener((observable, oldValue, newValue) -> {
-            saveButton.setDisable(newValue.trim().isEmpty() || titleField.getText().trim().isEmpty() 
-                || fileNameField.getText().trim().isEmpty() || documentTypeCombo.getValue() == null);
-        });
-        documentTypeCombo.valueProperty().addListener((observable, oldValue, newValue) -> {
-            saveButton.setDisable(newValue == null || titleField.getText().trim().isEmpty() 
-                || fileNameField.getText().trim().isEmpty() || fileUrlField.getText().trim().isEmpty());
-        });
+
+        titleField.textProperty().addListener((observable, oldValue, newValue) -> validateForm.run());
+        categoryCombo.valueProperty().addListener((observable, oldValue, newValue) -> validateForm.run());
 
         // Convert the result to a document when the save button is clicked
         dialog.setResultConverter(dialogButton -> {
             if (dialogButton == saveButtonType) {
+                try {
                 document.setTitle(titleField.getText().trim());
-                document.setFileName(fileNameField.getText().trim());
-                document.setFileUrl(fileUrlField.getText().trim());
-                document.setDocumentType(documentTypeCombo.getValue());
+                    document.setCategory(categoryCombo.getValue());
+                    
+                    // If new file selected, update file data and name
+                    if (selectedFile[0] != null) {
+                        byte[] fileData = Files.readAllBytes(selectedFile[0].toPath());
+                        document.setFileData(fileData);
+                        document.setFileName(selectedFile[0].getName());
+                    }
+                    
                 return document;
+                } catch (IOException e) {
+                    showAlert(Alert.AlertType.ERROR, "Lỗi", "Không thể đọc file: " + e.getMessage());
+                }
             }
             return null;
         });
 
         Optional<Document> result = dialog.showAndWait();
         result.ifPresent(updatedDocument -> {
-            boolean success = documentService.updateDocument(updatedDocument);
-            if (success) {
+            String updateResult = documentService.updateDocument(updatedDocument);
+            if ("SUCCESS".equals(updateResult)) {
                 showAlert(Alert.AlertType.INFORMATION, "Thành công", "Cập nhật tài liệu thành công!");
                 loadDocumentData();
                 updateStatistics();
             } else {
-                showAlert(Alert.AlertType.ERROR, "Lỗi", "Không thể cập nhật tài liệu!");
+                showAlert(Alert.AlertType.ERROR, "Lỗi", updateResult);
             }
         });
     }
@@ -403,5 +523,65 @@ public class DocumentController implements Initializable {
     @FXML
     private void onExitAdd() {
         btnAddDocument.setStyle("-fx-background-color: #3498db; -fx-text-fill: white; -fx-padding: 10 20; -fx-background-radius: 5; -fx-cursor: hand;");
+    }
+    
+    // Method để kiểm tra loại file hợp lệ
+    private boolean isValidFileType(String fileName) {
+        if (fileName == null || fileName.trim().isEmpty()) {
+            return false;
+        }
+        
+        String lowerFileName = fileName.toLowerCase();
+        String[] allowedExtensions = {".pdf", ".txt", ".doc", ".docx", ".xls", ".xlsx"};
+        
+        for (String ext : allowedExtensions) {
+            if (lowerFileName.endsWith(ext)) {
+                return true;
+            }
+        }
+        
+        return false;
+    }
+    
+    // Method để lấy danh sách categories không bị trùng lặp
+    private List<String> getAvailableCategories() {
+        // Tạo LinkedHashSet để tránh duplicate và giữ thứ tự
+        java.util.LinkedHashSet<String> categorySet = new java.util.LinkedHashSet<>();
+        
+        // Thêm categories từ database trước
+        List<String> dbCategories = documentService.getAllCategories();
+        categorySet.addAll(dbCategories);
+        
+        // Thêm categories mặc định (sẽ bỏ qua nếu đã tồn tại)
+        categorySet.addAll(List.of("Policy", "HR", "Finance", "Training", "General"));
+        
+        // Chuyển về ArrayList để dùng trong ComboBox
+        return new java.util.ArrayList<>(categorySet);
+    }
+    
+    // Method để format tên file hiển thị (cắt ngắn nếu quá dài)
+    private String formatFileName(String fileName) {
+        if (fileName == null) return "";
+        
+        // Nếu tên file <= 40 ký tự, hiển thị nguyên văn
+        if (fileName.length() <= 40) {
+            return fileName;
+        }
+        
+        // Nếu quá dài, cắt và hiển thị dạng: "beginning...end.ext"
+        String name = fileName;
+        String extension = "";
+        
+        int lastDot = fileName.lastIndexOf('.');
+        if (lastDot > 0) {
+            name = fileName.substring(0, lastDot);
+            extension = fileName.substring(lastDot);
+        }
+        
+        if (name.length() > 30) {
+            return name.substring(0, 25) + "..." + name.substring(name.length() - 5) + extension;
+        }
+        
+        return fileName;
     }
 }

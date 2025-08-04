@@ -6,22 +6,22 @@ public class Document {
     private int id;
     private String title;
     private String fileName;
-    private String fileUrl;
-    private String documentType;
-    private LocalDateTime uploadedAt;
+    private byte[] fileData;
+    private String category;
+    private LocalDateTime lastUpdated;
 
     // Constructor không tham số
     public Document() {
     }
 
     // Constructor đầy đủ
-    public Document(int id, String title, String fileName, String fileUrl, String documentType, LocalDateTime uploadedAt) {
+    public Document(int id, String title, String fileName, byte[] fileData, String category, LocalDateTime lastUpdated) {
         this.id = id;
         this.title = title;
         this.fileName = fileName;
-        this.fileUrl = fileUrl;
-        this.documentType = documentType;
-        this.uploadedAt = uploadedAt;
+        this.fileData = fileData;
+        this.category = category;
+        this.lastUpdated = lastUpdated;
     }
 
     // Getters và Setters
@@ -49,28 +49,28 @@ public class Document {
         this.fileName = fileName;
     }
 
-    public String getFileUrl() {
-        return fileUrl;
+    public byte[] getFileData() {
+        return fileData;
     }
 
-    public void setFileUrl(String fileUrl) {
-        this.fileUrl = fileUrl;
+    public void setFileData(byte[] fileData) {
+        this.fileData = fileData;
     }
 
-    public String getDocumentType() {
-        return documentType;
+    public String getCategory() {
+        return category;
     }
 
-    public void setDocumentType(String documentType) {
-        this.documentType = documentType;
+    public void setCategory(String category) {
+        this.category = category;
     }
 
-    public LocalDateTime getUploadedAt() {
-        return uploadedAt;
+    public LocalDateTime getLastUpdated() {
+        return lastUpdated;
     }
 
-    public void setUploadedAt(LocalDateTime uploadedAt) {
-        this.uploadedAt = uploadedAt;
+    public void setLastUpdated(LocalDateTime lastUpdated) {
+        this.lastUpdated = lastUpdated;
     }
 
     @Override
@@ -79,9 +79,9 @@ public class Document {
                 "id=" + id +
                 ", title='" + title + '\'' +
                 ", fileName='" + fileName + '\'' +
-                ", fileUrl='" + fileUrl + '\'' +
-                ", documentType='" + documentType + '\'' +
-                ", uploadedAt=" + uploadedAt +
+                ", fileData=" + (fileData != null ? fileData.length + " bytes" : "null") +
+                ", category='" + category + '\'' +
+                ", lastUpdated=" + lastUpdated +
                 '}';
     }
 }

@@ -13,7 +13,7 @@ public class DocumentService {
     public List<Document> getAllDocuments() {
         List<Document> documents = new ArrayList<>();
 
-        String sql = "SELECT * FROM documents ORDER BY uploaded_at DESC";
+        String sql = "SELECT id, title, file_name, category, last_updated FROM documents ORDER BY last_updated DESC";
 
         try (Connection conn = DBUtil.getConnection();
              PreparedStatement stmt = conn.prepareStatement(sql);
@@ -24,12 +24,11 @@ public class DocumentService {
                 document.setId(rs.getInt("id"));
                 document.setTitle(rs.getString("title"));
                 document.setFileName(rs.getString("file_name"));
-                document.setFileUrl(rs.getString("file_url"));
-                document.setDocumentType(rs.getString("document_type"));
+                document.setCategory(rs.getString("category"));
                 
-                Timestamp timestamp = rs.getTimestamp("uploaded_at");
+                Timestamp timestamp = rs.getTimestamp("last_updated");
                 if (timestamp != null) {
-                    document.setUploadedAt(timestamp.toLocalDateTime());
+                    document.setLastUpdated(timestamp.toLocalDateTime());
                 }
 
                 documents.add(document);
@@ -43,47 +42,66 @@ public class DocumentService {
         return documents;
     }
 
-    public boolean addDocument(Document document) {
-        String sql = "INSERT INTO documents (title, file_name, file_url, document_type, uploaded_at) VALUES (?, ?, ?, ?, ?)";
+    public String addDocument(Document document) {
+        String sql = "INSERT INTO documents (title, file_name, file_data, category) VALUES (?, ?, ?, ?)";
 
         try (Connection conn = DBUtil.getConnection();
              PreparedStatement stmt = conn.prepareStatement(sql)) {
 
             stmt.setString(1, document.getTitle());
             stmt.setString(2, document.getFileName());
-            stmt.setString(3, document.getFileUrl());
-            stmt.setString(4, document.getDocumentType());
-            stmt.setTimestamp(5, Timestamp.valueOf(document.getUploadedAt()));
+            stmt.setBytes(3, document.getFileData());
+            stmt.setString(4, document.getCategory());
 
             int rowsAffected = stmt.executeUpdate();
-            return rowsAffected > 0;
+            if (rowsAffected > 0) {
+                return "SUCCESS";
+            } else {
+                return "Không có dòng nào được thêm vào database.";
+            }
 
         } catch (SQLException e) {
             System.err.println("Error adding document: " + e.getMessage());
             e.printStackTrace();
-            return false;
+            
+            if (e.getMessage().contains("Packet for query is too large")) {
+                return "File quá lớn cho cấu hình database hiện tại.";
+            } else if (e.getMessage().contains("doesn't exist")) {
+                return "Bảng 'documents' không tồn tại trong database.";
+            } else {
+                return "Lỗi database: " + e.getMessage();
+            }
         }
     }
 
-    public boolean updateDocument(Document document) {
-        String sql = "UPDATE documents SET title = ?, file_name = ?, file_url = ?, document_type = ? WHERE id = ?";
+    public String updateDocument(Document document) {
+        String sql = "UPDATE documents SET title = ?, file_name = ?, file_data = ?, category = ? WHERE id = ?";
 
         try (Connection conn = DBUtil.getConnection();
              PreparedStatement stmt = conn.prepareStatement(sql)) {
 
             stmt.setString(1, document.getTitle());
             stmt.setString(2, document.getFileName());
-            stmt.setString(3, document.getFileUrl());
-            stmt.setString(4, document.getDocumentType());
+            stmt.setBytes(3, document.getFileData());
+            stmt.setString(4, document.getCategory());
             stmt.setInt(5, document.getId());
 
             int rowsAffected = stmt.executeUpdate();
-            return rowsAffected > 0;
+            if (rowsAffected > 0) {
+                return "SUCCESS";
+            } else {
+                return "Không tìm thấy tài liệu để cập nhật.";
+            }
 
         } catch (SQLException e) {
             System.err.println("Error updating document: " + e.getMessage());
             e.printStackTrace();
-            return false;
+            
+            if (e.getMessage().contains("Packet for query is too large")) {
+                return "File quá lớn cho cấu hình database hiện tại.";
+            } else {
+                return "Lỗi database: " + e.getMessage();
+            }
         }
     }
 
@@ -119,12 +137,12 @@ public class DocumentService {
                 document.setId(rs.getInt("id"));
                 document.setTitle(rs.getString("title"));
                 document.setFileName(rs.getString("file_name"));
-                document.setFileUrl(rs.getString("file_url"));
-                document.setDocumentType(rs.getString("document_type"));
+                document.setFileData(rs.getBytes("file_data"));
+                document.setCategory(rs.getString("category"));
                 
-                Timestamp timestamp = rs.getTimestamp("uploaded_at");
+                Timestamp timestamp = rs.getTimestamp("last_updated");
                 if (timestamp != null) {
-                    document.setUploadedAt(timestamp.toLocalDateTime());
+                    document.setLastUpdated(timestamp.toLocalDateTime());
                 }
 
                 return document;
@@ -138,39 +156,39 @@ public class DocumentService {
         return null;
     }
 
-    public List<String> getAllDocumentTypes() {
-        List<String> types = new ArrayList<>();
-        String sql = "SELECT DISTINCT document_type FROM documents WHERE document_type IS NOT NULL ORDER BY document_type";
+    public List<String> getAllCategories() {
+        List<String> categories = new ArrayList<>();
+        String sql = "SELECT DISTINCT category FROM documents WHERE category IS NOT NULL ORDER BY category";
 
         try (Connection conn = DBUtil.getConnection();
              PreparedStatement stmt = conn.prepareStatement(sql);
              ResultSet rs = stmt.executeQuery()) {
 
             while (rs.next()) {
-                types.add(rs.getString("document_type"));
+                categories.add(rs.getString("category"));
             }
 
         } catch (SQLException e) {
-            System.err.println("Error getting document types: " + e.getMessage());
+            System.err.println("Error getting document categories: " + e.getMessage());
             e.printStackTrace();
         }
 
-        return types;
+        return categories;
     }
 
-    public List<Document> searchDocuments(String keyword, String documentType) {
+    public List<Document> searchDocuments(String keyword, String category) {
         List<Document> documents = new ArrayList<>();
-        StringBuilder sql = new StringBuilder("SELECT * FROM documents WHERE 1=1");
+        StringBuilder sql = new StringBuilder("SELECT id, title, file_name, category, last_updated FROM documents WHERE 1=1");
         
         if (keyword != null && !keyword.trim().isEmpty()) {
             sql.append(" AND (title LIKE ? OR file_name LIKE ?)");
         }
         
-        if (documentType != null && !documentType.trim().isEmpty() && !documentType.equals("Tất cả")) {
-            sql.append(" AND document_type = ?");
+        if (category != null && !category.trim().isEmpty() && !category.equals("Tất cả")) {
+            sql.append(" AND category = ?");
         }
         
-        sql.append(" ORDER BY uploaded_at DESC");
+        sql.append(" ORDER BY last_updated DESC");
 
         try (Connection conn = DBUtil.getConnection();
              PreparedStatement stmt = conn.prepareStatement(sql.toString())) {
@@ -183,8 +201,8 @@ public class DocumentService {
                 stmt.setString(paramIndex++, searchKeyword);
             }
             
-            if (documentType != null && !documentType.trim().isEmpty() && !documentType.equals("Tất cả")) {
-                stmt.setString(paramIndex, documentType);
+            if (category != null && !category.trim().isEmpty() && !category.equals("Tất cả")) {
+                stmt.setString(paramIndex, category);
             }
 
             ResultSet rs = stmt.executeQuery();
@@ -194,12 +212,11 @@ public class DocumentService {
                 document.setId(rs.getInt("id"));
                 document.setTitle(rs.getString("title"));
                 document.setFileName(rs.getString("file_name"));
-                document.setFileUrl(rs.getString("file_url"));
-                document.setDocumentType(rs.getString("document_type"));
+                document.setCategory(rs.getString("category"));
                 
-                Timestamp timestamp = rs.getTimestamp("uploaded_at");
+                Timestamp timestamp = rs.getTimestamp("last_updated");
                 if (timestamp != null) {
-                    document.setUploadedAt(timestamp.toLocalDateTime());
+                    document.setLastUpdated(timestamp.toLocalDateTime());
                 }
 
                 documents.add(document);
@@ -212,4 +229,27 @@ public class DocumentService {
 
         return documents;
     }
+    
+    public byte[] getDocumentFile(int id) {
+        String sql = "SELECT file_data FROM documents WHERE id = ?";
+
+        try (Connection conn = DBUtil.getConnection();
+             PreparedStatement stmt = conn.prepareStatement(sql)) {
+
+            stmt.setInt(1, id);
+            ResultSet rs = stmt.executeQuery();
+
+            if (rs.next()) {
+                return rs.getBytes("file_data");
+            }
+
+        } catch (SQLException e) {
+            System.err.println("Error getting document file: " + e.getMessage());
+            e.printStackTrace();
+        }
+
+        return null;
+    }
+    
+
 }
