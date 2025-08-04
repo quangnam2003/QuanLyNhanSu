@@ -295,13 +295,14 @@ public class OrganizationController implements Initializable {
 
     private void loadOrganizationChart() {
         try {
-            Map<String, Integer> stats = departmentService.getDepartmentStats();
+            // Lấy danh sách phòng ban với đầy đủ thông tin
+            List<Department> departments = departmentService.getAllDepartmentsWithDetails();
             
             // Debug: In ra thông tin để kiểm tra
             if (DEBUG) {
                 System.out.println("=== DEBUG: Organization Chart Data ===");
-                for (Map.Entry<String, Integer> entry : stats.entrySet()) {
-                    System.out.println(entry.getKey() + ": " + entry.getValue() + " nhân viên");
+                for (Department dept : departments) {
+                    System.out.println(dept.getDepartmentName() + ": " + dept.getEmployeeCount() + " nhân viên");
                 }
             }
             
@@ -309,11 +310,8 @@ public class OrganizationController implements Initializable {
             departmentBoxes.getChildren().clear();
             
             // Tạo department boxes động dựa trên dữ liệu thực
-            for (Map.Entry<String, Integer> entry : stats.entrySet()) {
-                String deptName = entry.getKey();
-                int employeeCount = entry.getValue();
-                
-                VBox deptBox = createDepartmentBox(deptName, employeeCount);
+            for (Department department : departments) {
+                VBox deptBox = createDepartmentBox(department);
                 departmentBoxes.getChildren().add(deptBox);
             }
             
@@ -388,10 +386,13 @@ public class OrganizationController implements Initializable {
         }
     }
 
-    private VBox createDepartmentBox(String departmentName, int employeeCount) {
+    private VBox createDepartmentBox(Department department) {
         VBox deptBox = new VBox();
         deptBox.setAlignment(Pos.CENTER);
         deptBox.setSpacing(8);
+        
+        String departmentName = department.getDepartmentName();
+        int employeeCount = department.getEmployeeCount();
         
         // Chọn màu dựa trên tên phòng ban
         String backgroundColor = getDepartmentColor(departmentName);
@@ -423,6 +424,11 @@ public class OrganizationController implements Initializable {
             deptBox.setStyle("-fx-background-color: linear-gradient(to bottom, " + backgroundColor + ", " + 
                 getDarkerColor(backgroundColor) + "); -fx-padding: 18 25; -fx-background-radius: 12; " +
                 "-fx-effect: dropshadow(three-pass-box, rgba(0,0,0,0.2), 10, 0, 0, 3);");
+        });
+        
+        // Thêm click handler để xem danh sách nhân viên
+        deptBox.setOnMouseClicked(e -> {
+            handleViewEmployees(department);
         });
         
         return deptBox;
