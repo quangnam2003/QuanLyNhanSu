@@ -1,4 +1,4 @@
-package com.main;
+/* package com.main;
 
 // TestConnection.java
 import java.sql.Connection;
@@ -17,4 +17,4 @@ public class TestConnection {
             e.printStackTrace();
         }
     }
-}
+} */
