@@ -1,7 +1,5 @@
 package com.controller;
 
-import com.model.Department;
-import com.model.Position;
 import javafx.scene.control.Button;
 import javafx.scene.control.TableCell;
 import javafx.scene.control.TableColumn;
@@ -29,6 +27,7 @@ import javafx.stage.Stage;
 import java.io.IOException;
 import java.net.URL;
 import java.time.LocalDate;
+import java.time.format.DateTimeFormatter;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -79,7 +78,7 @@ public class EmployeeController implements Initializable {
             if (newValue == null || newValue.isBlank()) {
                 loadEmployeeData();
             } else {
-                List<Employee> results = employeeService.searchByNameOrId(newValue.trim());
+                List<Employee> results = employeeService.searchEmployee(newValue.trim());
                 employeeTable.setItems(FXCollections.observableArrayList(results));
             }
         });
@@ -99,6 +98,13 @@ public class EmployeeController implements Initializable {
                     {
                         btnEdit.setStyle("-fx-background-color: #3498db; -fx-text-fill: white; -fx-background-radius: 5;");
                         btnDelete.setStyle("-fx-background-color: #e74c3c; -fx-text-fill: white; -fx-background-radius: 5;");
+
+                        btnEdit.setOnMouseEntered(e -> btnEdit.setStyle("-fx-background-color: #2980b9; -fx-text-fill: white; -fx-background-radius: 5; -fx-cursor: hand;"));
+                        btnEdit.setOnMouseExited(e -> btnEdit.setStyle("-fx-background-color: #3498db; -fx-text-fill: white; -fx-background-radius: 5;"));
+
+                        btnDelete.setOnMouseEntered(e -> btnDelete.setStyle("-fx-background-color: #c0392b; -fx-text-fill: white; -fx-background-radius: 5; -fx-cursor: hand;"));
+                        btnDelete.setOnMouseExited(e -> btnDelete.setStyle("-fx-background-color: #e74c3c; -fx-text-fill: white; -fx-background-radius: 5;"));
+
                         hBox.setSpacing(10);
                         hBox.setAlignment(Pos.CENTER);
 
@@ -135,6 +141,25 @@ public class EmployeeController implements Initializable {
         colHireDate.setCellValueFactory(new PropertyValueFactory<>("hireDate"));
         colStatus.setCellValueFactory(new PropertyValueFactory<>("employmentStatus"));
         colSalaryGrade.setCellValueFactory(new PropertyValueFactory<>("salaryGrade"));
+
+        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("dd/MM/yyyy");
+
+        colDateOfBirth.setCellFactory(column -> new TableCell<Employee, LocalDate>() {
+            @Override
+            protected void updateItem(LocalDate date, boolean empty) {
+                super.updateItem(date, empty);
+                setText(empty || date == null ? null : formatter.format(date));
+            }
+        });
+
+        colHireDate.setCellFactory(column -> new TableCell<Employee, LocalDate>() {
+            @Override
+            protected void updateItem(LocalDate date, boolean empty) {
+                super.updateItem(date, empty);
+                setText(empty || date == null ? null : formatter.format(date));
+            }
+        });
+
     }
 
     private void loadEmployeeData() {

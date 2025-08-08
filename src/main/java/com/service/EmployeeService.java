@@ -201,7 +201,7 @@ public class EmployeeService {
         return list;
     }
 
-    public List<Employee> searchByNameOrId(String keyword) {
+    public List<Employee> searchEmployee(String keyword) {
         List<Employee> list = new ArrayList<>();
 
         String sql = """
@@ -209,8 +209,13 @@ public class EmployeeService {
         FROM employees e
         LEFT JOIN departments d ON e.department_id = d.id
         LEFT JOIN positions p ON e.position_id = p.id
-        WHERE e.id LIKE ? OR e.first_name LIKE ? OR e.last_name LIKE ? OR CONCAT(e.first_name, ' ', e.last_name) LIKE ?
-    """;
+        WHERE e.id LIKE ?
+            OR e.first_name LIKE ?
+            OR e.last_name LIKE ?
+            OR CONCAT(e.first_name, ' ', e.last_name) LIKE ?
+            OR e.phone LIKE ?
+            OR e.email LIKE ?
+        """;
 
         try (Connection conn = DBUtil.getConnection();
              PreparedStatement ps = conn.prepareStatement(sql)) {
@@ -220,6 +225,8 @@ public class EmployeeService {
             ps.setString(2, like);
             ps.setString(3, like);
             ps.setString(4, like);
+            ps.setString(5, like); // phone
+            ps.setString(6, like); // email
 
             ResultSet rs = ps.executeQuery();
 
@@ -369,5 +376,52 @@ public class EmployeeService {
             return false;
         }
     }
+
+    public boolean isEmailExists(String email, Integer excludeId) {
+        String sql = "SELECT COUNT(*) FROM employees WHERE email = ?";
+
+        if (excludeId != null) {
+            sql += " AND id <> ?";
+        }
+
+        try (Connection conn = DBUtil.getConnection();
+             PreparedStatement ps = conn.prepareStatement(sql)) {
+
+            ps.setString(1, email);
+            if (excludeId != null) ps.setInt(2, excludeId);
+
+            ResultSet rs = ps.executeQuery();
+            if (rs.next()) return rs.getInt(1) > 0;
+
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+
+        return false;
+    }
+
+    public boolean isPhoneExists(String phone, Integer excludeId) {
+        String sql = "SELECT COUNT(*) FROM employees WHERE phone = ?";
+
+        if (excludeId != null) {
+            sql += " AND id <> ?";
+        }
+
+        try (Connection conn = DBUtil.getConnection();
+             PreparedStatement ps = conn.prepareStatement(sql)) {
+
+            ps.setString(1, phone);
+            if (excludeId != null) ps.setInt(2, excludeId);
+
+            ResultSet rs = ps.executeQuery();
+            if (rs.next()) return rs.getInt(1) > 0;
+
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+
+        return false;
+    }
+
 
 }
