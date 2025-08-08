@@ -40,8 +40,8 @@ public class AddEmployeeController {
 
     @FXML
     public void initialize() {
-        cbGender.setItems(FXCollections.observableArrayList("Male", "Female", "Other"));
-        cbStatus.setItems(FXCollections.observableArrayList("Active", "Inactive", "Terminated", "On Leave"));
+        cbGender.setItems(FXCollections.observableArrayList("Nam", "Nữ"));
+        cbStatus.setItems(FXCollections.observableArrayList("Đang làm việc", "Đã nghỉ việc", "Bị đuổi việc"));
 
         cbDepartment.setItems(FXCollections.observableArrayList(departmentService.getAllDepartments()));
         cbPosition.setItems(FXCollections.observableArrayList(positionService.getAllPositions()));
@@ -52,11 +52,20 @@ public class AddEmployeeController {
             cbPosition.setValue(positionService.getPositionById(editingEmployee.getPositionId()));
         }
 
-        cbDepartment.setOnAction(e -> updatePositionList());
-        btnSave.setOnAction(e -> handleSave());
+        cbDepartment.setOnAction(event -> {
+            Department selected = cbDepartment.getValue();
+            if (selected != null) {
+                List<Position> filtered = positionService.getPositionsByDepartmentId(selected.getId());
+                cbPosition.getItems().setAll(filtered);
+            } else {
+                cbPosition.getItems().clear();
+            }
+        });
+
+
     }
 
-
+    @FXML
     private void handleSave() {
         if (!isValidForm()) return;
 
@@ -142,9 +151,17 @@ public class AddEmployeeController {
         if (txtFirstName.getText().isBlank()) msg.append("Vui lòng nhập Họ.\n");
         if (txtLastName.getText().isBlank()) msg.append("Vui lòng nhập Tên.\n");
         if (txtEmail.getText().isBlank()) msg.append("Vui lòng nhập Email.\n");
+        else if (employeeService.isEmailExists(txtEmail.getText().trim(),
+                editingEmployee != null ? editingEmployee.getId() : null)) {
+            msg.append("Email đã tồn tại trong hệ thống.\n");
+        }
         else if (!txtEmail.getText().matches("^[\\w.-]+@[\\w.-]+\\.\\w{2,}$")) msg.append("Email không hợp lệ.\n");
 
         if (txtPhone.getText().isBlank()) msg.append("Vui lòng nhập Số điện thoại.\n");
+        else if (employeeService.isPhoneExists(txtPhone.getText().trim(),
+                editingEmployee != null ? editingEmployee.getId() : null)) {
+            msg.append("Số điện thoại đã tồn tại trong hệ thống.\n");
+        }
         else if (!txtPhone.getText().matches("^\\d{8,15}$")) msg.append("Số điện thoại không hợp lệ.\n");
 
         if (txtCitizenId.getText().isBlank()) msg.append("Vui lòng nhập CCCD.\n");

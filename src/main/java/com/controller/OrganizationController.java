@@ -717,7 +717,7 @@ public class OrganizationController implements Initializable {
             // Chỉ thêm nhân viên Active và On Leave với role_id = 6
             allEmployees.stream()
                 .filter(emp -> ("Active".equals(emp.getEmploymentStatus()) || "On Leave".equals(emp.getEmploymentStatus())) 
-                            && emp.getRoleId() == 6)
+                            && emp.getRoleId() == 8)
                 .forEach(employeeList::add);
             
             managerComboBox.setItems(employeeList);
