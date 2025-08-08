@@ -12,7 +12,7 @@ module com.example.quanlynhansu {
     requires java.sql;
 
     opens com.main to javafx.fxml;
-    exports com.main;
+
     exports com.view;
     opens com.view to javafx.fxml;
     exports com.controller;

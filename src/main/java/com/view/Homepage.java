@@ -14,7 +14,7 @@ public class Homepage extends Application {
         Parent root = loader.load();
         Scene scene = new Scene(root, 800, 500);
         stage.setScene(scene);
-        stage.setTitle("Đăng nhập");
+        stage.setTitle("KnurtD's System");
         stage.show();
 
     }

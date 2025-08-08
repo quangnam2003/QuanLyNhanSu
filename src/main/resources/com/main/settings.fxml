@@ -5,124 +5,65 @@
 
 <ScrollPane xmlns="http://javafx.com/javafx"
             xmlns:fx="http://javafx.com/fxml"
+            fx:controller="com.controller.SettingsController"
             fitToWidth="true"
             fitToHeight="true"
             stylesheets="@sidebar.css">
 
     <VBox styleClass="page-container" spacing="20">
-        
+
         <!-- Header -->
-        <Label text="Cài đặt Hệ thống" styleClass="page-title"/>
+        <HBox alignment="CENTER_LEFT" spacing="20">
+            <Label text="Quản lý Tài khoản" styleClass="page-title"/>
+            <Region HBox.hgrow="ALWAYS"/>
+            <Button fx:id="btnAddUser"
+                    onAction="#handleAddUser"
+                    text="+ Thêm tài khoản"
+                    style="-fx-background-color: #3498db; -fx-text-fill: white; -fx-padding: 10 20; -fx-background-radius: 5; -fx-cursor: hand;"/>
+        </HBox>
 
-        <!-- Settings Sections -->
-        <VBox spacing="20">
-            
-            <!-- General Settings -->
-            <VBox spacing="15" style="-fx-background-color: white; -fx-padding: 25; -fx-background-radius: 8; -fx-effect: dropshadow(three-pass-box, rgba(0,0,0,0.1), 10, 0, 0, 2);">
-                <Label text="⚙️ Cài đặt chung" style="-fx-font-size: 18px; -fx-font-weight: bold; -fx-text-fill: #2c3e50;"/>
-                
-                <HBox spacing="20" alignment="CENTER_LEFT">
-                    <Label text="Tên công ty:" style="-fx-font-weight: bold; -fx-pref-width: 150;"/>
-                    <TextField text="Công ty ABC" prefWidth="300"/>
-                </HBox>
-                
-                <HBox spacing="20" alignment="CENTER_LEFT">
-                    <Label text="Địa chỉ:" style="-fx-font-weight: bold; -fx-pref-width: 150;"/>
-                    <TextField text="123 Đường XYZ, Quận 1, TP.HCM" prefWidth="300"/>
-                </HBox>
-                
-                <HBox spacing="20" alignment="CENTER_LEFT">
-                    <Label text="Múi giờ:" style="-fx-font-weight: bold; -fx-pref-width: 150;"/>
-                    <ComboBox prefWidth="200" promptText="UTC+7 (Vietnam)"/>
-                </HBox>
-                
-                <HBox spacing="20" alignment="CENTER_LEFT">
-                    <Label text="Ngôn ngữ:" style="-fx-font-weight: bold; -fx-pref-width: 150;"/>
-                    <ComboBox prefWidth="200" promptText="Tiếng Việt"/>
-                </HBox>
+        <!-- Search and Filter -->
+        <HBox spacing="15" alignment="CENTER_LEFT">
+            <TextField fx:id="searchField" promptText="Tìm kiếm tài khoản..."
+                       prefWidth="300"
+                       style="-fx-padding: 10; -fx-background-radius: 5; -fx-border-color: #ddd; -fx-border-radius: 5;" />
+
+            <VBox spacing="5">
+                <Label text="Vai trò" />
+                <ComboBox fx:id="roleFilter" promptText="Chọn vai trò"
+                          prefWidth="180" style="-fx-padding: 10;" />
             </VBox>
+        </HBox>
 
-            <!-- Security Settings -->
-            <VBox spacing="15" style="-fx-background-color: white; -fx-padding: 25; -fx-background-radius: 8; -fx-effect: dropshadow(three-pass-box, rgba(0,0,0,0.1), 10, 0, 0, 2);">
-                <Label text="🔒 Bảo mật" style="-fx-font-size: 18px; -fx-font-weight: bold; -fx-text-fill: #2c3e50;"/>
-                
-                <HBox spacing="20" alignment="CENTER_LEFT">
-                    <Label text="Mật khẩu tối thiểu:" style="-fx-font-weight: bold; -fx-pref-width: 150;"/>
-                    <Spinner min="6" max="20" initialValue="8" prefWidth="100"/>
-                    <Label text="ký tự"/>
-                </HBox>
-                
-                <HBox spacing="20" alignment="CENTER_LEFT">
-                    <Label text="Khóa tài khoản sau:" style="-fx-font-weight: bold; -fx-pref-width: 150;"/>
-                    <Spinner min="3" max="10" initialValue="5" prefWidth="100"/>
-                    <Label text="lần đăng nhập sai"/>
-                </HBox>
-                
-                <HBox spacing="20" alignment="CENTER_LEFT">
-                    <CheckBox text="Yêu cầu 2FA (Two-Factor Authentication)"/>
-                </HBox>
-                
-                <HBox spacing="20" alignment="CENTER_LEFT">
-                    <CheckBox text="Ghi log hoạt động người dùng"/>
-                </HBox>
-            </VBox>
+        <!-- Users Table -->
+        <TableView fx:id="userTable" style="-fx-background-color: white; -fx-border-color: #ddd; -fx-border-radius: 8;">
+            <columns>
+                <TableColumn fx:id="colId" text="ID" prefWidth="80"/>
+                <TableColumn fx:id="colUsername" text="Tài khoản" prefWidth="200"/>
+                <TableColumn fx:id="colRoleName" text="Vai trò" prefWidth="200"/>
+                <TableColumn fx:id="colRoleCode" text="Mã vai trò" prefWidth="150"/>
+                <TableColumn fx:id="actionColumn" text="Hành động" prefWidth="140"/>
+            </columns>
+        </TableView>
 
-            <!-- Email Settings -->
-            <VBox spacing="15" style="-fx-background-color: white; -fx-padding: 25; -fx-background-radius: 8; -fx-effect: dropshadow(three-pass-box, rgba(0,0,0,0.1), 10, 0, 0, 2);">
-                <Label text="📧 Cài đặt Email" style="-fx-font-size: 18px; -fx-font-weight: bold; -fx-text-fill: #2c3e50;"/>
-                
-                <HBox spacing="20" alignment="CENTER_LEFT">
-                    <Label text="SMTP Server:" style="-fx-font-weight: bold; -fx-pref-width: 150;"/>
-                    <TextField text="smtp.gmail.com" prefWidth="300"/>
-                </HBox>
-                
-                <HBox spacing="20" alignment="CENTER_LEFT">
-                    <Label text="Port:" style="-fx-font-weight: bold; -fx-pref-width: 150;"/>
-                    <TextField text="587" prefWidth="100"/>
-                </HBox>
-                
-                <HBox spacing="20" alignment="CENTER_LEFT">
-                    <Label text="Email gửi:" style="-fx-font-weight: bold; -fx-pref-width: 150;"/>
-                    <TextField text="hr@company.com" prefWidth="300"/>
-                </HBox>
-                
-                <HBox spacing="20" alignment="CENTER_LEFT">
-                    <CheckBox text="Gửi thông báo khi có nhân viên mới"/>
-                </HBox>
-                
-                <HBox spacing="20" alignment="CENTER_LEFT">
-                    <CheckBox text="Gửi nhắc nhở hợp đồng sắp hết hạn"/>
-                </HBox>
-            </VBox>
-
-            <!-- Backup Settings -->
-            <VBox spacing="15" style="-fx-background-color: white; -fx-padding: 25; -fx-background-radius: 8; -fx-effect: dropshadow(three-pass-box, rgba(0,0,0,0.1), 10, 0, 0, 2);">
-                <Label text="💾 Sao lưu dữ liệu" style="-fx-font-size: 18px; -fx-font-weight: bold; -fx-text-fill: #2c3e50;"/>
-                
-                <HBox spacing="20" alignment="CENTER_LEFT">
-                    <Label text="Tự động sao lưu:" style="-fx-font-weight: bold; -fx-pref-width: 150;"/>
-                    <ComboBox prefWidth="200" promptText="Hàng ngày"/>
-                </HBox>
-                
-                <HBox spacing="20" alignment="CENTER_LEFT">
-                    <Label text="Giữ bản sao lưu:" style="-fx-font-weight: bold; -fx-pref-width: 150;"/>
-                    <Spinner min="7" max="365" initialValue="30" prefWidth="100"/>
-                    <Label text="ngày"/>
-                </HBox>
-                
-                <HBox spacing="20" alignment="CENTER_LEFT">
-                    <Button text="Sao lưu ngay" style="-fx-background-color: #27ae60; -fx-text-fill: white; -fx-padding: 10 20; -fx-background-radius: 5;"/>
-                    <Button text="Khôi phục" style="-fx-background-color: #f39c12; -fx-text-fill: white; -fx-padding: 10 20; -fx-background-radius: 5;"/>
-                </HBox>
-            </VBox>
-
-            <!-- Save Button -->
-            <HBox spacing="15" alignment="CENTER_LEFT">
-                <Button text="💾 Lưu cài đặt" style="-fx-background-color: #3498db; -fx-text-fill: white; -fx-padding: 15 30; -fx-background-radius: 5; -fx-font-size: 14px; -fx-font-weight: bold;"/>
-                <Button text="🔄 Khôi phục mặc định" style="-fx-background-color: #95a5a6; -fx-text-fill: white; -fx-padding: 15 30; -fx-background-radius: 5; -fx-font-size: 14px;"/>
+        <!-- Overview -->
+        <VBox spacing="10" style="-fx-background-color: #f8f9fa; -fx-padding: 20; -fx-background-radius: 8;">
+            <Label text="Tổng quan:" style="-fx-font-weight: bold; -fx-font-size: 16px;"/>
+            <HBox spacing="30">
+                <VBox alignment="CENTER" spacing="5">
+                    <Label fx:id="lblTotal" text="0" style="-fx-font-size: 24px; -fx-font-weight: bold; -fx-text-fill: #27ae60;"/>
+                    <Label text="Tổng tài khoản" style="-fx-font-size: 12px; -fx-text-fill: #7f8c8d;"/>
+                </VBox>
+                <VBox alignment="CENTER" spacing="5">
+                    <Label fx:id="lblAdmin" text="0" style="-fx-font-size: 24px; -fx-font-weight: bold; -fx-text-fill: #3498db;"/>
+                    <Label text="Quản trị (Admin)" style="-fx-font-size: 12px; -fx-text-fill: #7f8c8d;"/>
+                </VBox>
+                <VBox alignment="CENTER" spacing="5">
+                    <Label fx:id="lblHR" text="0" style="-fx-font-size: 24px; -fx-font-weight: bold; -fx-text-fill: #e67e22;"/>
+                    <Label text="Nhân sự (HR)" style="-fx-font-size: 12px; -fx-text-fill: #7f8c8d;"/>
+                </VBox>
             </HBox>
-
         </VBox>
 
     </VBox>
-</ScrollPane> 
+</ScrollPane>
