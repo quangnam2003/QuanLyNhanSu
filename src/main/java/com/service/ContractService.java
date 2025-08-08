@@ -90,9 +90,9 @@ public class ContractService {
         }
 
         if (status != null && !status.isEmpty()) {
-            if (status.equals("Active")) {
+            if (status.equals("Đang hoạt động")) {
                 sql.append(" AND (ec.end_date IS NULL OR ec.end_date > CURDATE())");
-            } else if (status.equals("Expired")) {
+            } else if (status.equals("Đã hết hạn")) {
                 sql.append(" AND ec.end_date IS NOT NULL AND ec.end_date < CURDATE()");
             }
             // status khác thì không lọc
@@ -132,7 +132,7 @@ public class ContractService {
             INSERT INTO employment_contracts 
             (contract_number, employee_id, contract_type_id, start_date, end_date, 
              salary, allowances, benefits, terms_conditions, signed_date, notes, created_by)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
             """;
 
         try (Connection conn = DBUtil.getConnection();
@@ -147,9 +147,9 @@ public class ContractService {
             stmt.setBigDecimal(7, contract.getAllowances());
             stmt.setString(8, contract.getBenefits());
             stmt.setString(9, contract.getTermsConditions());
-            stmt.setDate(11, contract.getSignedDate() != null ? Date.valueOf(contract.getSignedDate()) : null);
-            stmt.setString(12, contract.getNotes());
-            stmt.setInt(13, contract.getCreatedBy());
+            stmt.setDate(10, contract.getSignedDate() != null ? Date.valueOf(contract.getSignedDate()) : null);
+            stmt.setString(11, contract.getNotes());
+            stmt.setInt(12, contract.getCreatedBy());
 
             return stmt.executeUpdate() > 0;
         } catch (SQLException e) {
@@ -180,9 +180,9 @@ public class ContractService {
             stmt.setBigDecimal(7, contract.getAllowances());
             stmt.setString(8, contract.getBenefits());
             stmt.setString(9, contract.getTermsConditions());
-            stmt.setDate(11, contract.getSignedDate() != null ? Date.valueOf(contract.getSignedDate()) : null);
-            stmt.setString(12, contract.getNotes());
-            stmt.setInt(13, contract.getId());
+            stmt.setDate(10, contract.getSignedDate() != null ? Date.valueOf(contract.getSignedDate()) : null);
+            stmt.setString(11, contract.getNotes());
+            stmt.setInt(12, contract.getId());
 
             return stmt.executeUpdate() > 0;
         } catch (SQLException e) {
@@ -286,28 +286,59 @@ public class ContractService {
     }
 
     // Generate next contract number
-    public String generateContractNumber() {
-        String sql = "SELECT contract_number FROM employment_contracts ORDER BY id DESC LIMIT 1";
+    public String generateContractNumber(String contractTypeName) {
+        String prefix = getContractPrefix(contractTypeName);
+
+        String sql = "SELECT contract_number FROM employment_contracts WHERE contract_number LIKE ? ORDER BY id DESC LIMIT 1";
 
         try (Connection conn = DBUtil.getConnection();
-             PreparedStatement stmt = conn.prepareStatement(sql);
-             ResultSet rs = stmt.executeQuery()) {
+             PreparedStatement stmt = conn.prepareStatement(sql)) {
+
+            stmt.setString(1, prefix + "%");
+            ResultSet rs = stmt.executeQuery();
 
             if (rs.next()) {
                 String lastNumber = rs.getString("contract_number");
-                // Extract number from format like "HD2024-015"
+                // Extract number from format like "HD1Y-015"
                 String[] parts = lastNumber.split("-");
                 if (parts.length == 2) {
                     int nextNum = Integer.parseInt(parts[1]) + 1;
-                    return String.format("HD%d-%03d", LocalDate.now().getYear(), nextNum);
+                    return String.format("%s-%03d", prefix, nextNum);
                 }
             }
         } catch (SQLException e) {
             e.printStackTrace();
         }
 
-        // Default format if no previous contracts exist
-        return String.format("HD%d-001", LocalDate.now().getYear());
+        // Default format if no previous contracts exist for this type
+        return String.format("%s-001", prefix);
+    }
+
+    // THÊM MỚI: Get contract prefix based on contract type
+    private String getContractPrefix(String contractTypeName) {
+        if (contractTypeName == null) {
+            return "HD"; // Default prefix
+        }
+
+        switch (contractTypeName) {
+            case "Hợp đồng không xác định thời hạn":
+                return "HDVT"; // Hợp đồng vô thời hạn
+            case "Hợp đồng xác định thời hạn 1 năm":
+                return "HD1Y"; // Hợp đồng 1 năm
+            case "Hợp đồng xác định thời hạn 2 năm":
+                return "HD2Y"; // Hợp đồng 2 năm
+            case "Hợp đồng thời vụ":
+                return "HDTV"; // Hợp đồng thời vụ
+            case "Hợp đồng thử việc":
+                return "HDTH"; // Hợp đồng thử việc
+            default:
+                return "HD"; // Default prefix
+        }
+    }
+
+    // Generate next contract number (method cũ để tương thích)
+    public String generateContractNumber() {
+        return generateContractNumber(null);
     }
 
     // Helper method to map ResultSet to Contract object

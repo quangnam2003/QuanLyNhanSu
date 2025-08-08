@@ -155,9 +155,9 @@ public class Contract {
 
     public String getStatus() {
         if (endDate == null || endDate.isAfter(LocalDate.now())) {
-            return "Active";
+            return "Đang hoạt động";
         } else {
-            return "Expired";
+            return "Đã hết hạn";
         }
     }
 
