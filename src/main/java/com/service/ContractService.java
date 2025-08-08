@@ -257,6 +257,23 @@ public class ContractService {
         return stats;
     }
 
+    /**
+     * Get total number of contracts.
+     */
+    public int getTotalContractsCount() {
+        String sql = "SELECT COUNT(*) FROM employment_contracts";
+        try (Connection conn = DBUtil.getConnection();
+             PreparedStatement ps = conn.prepareStatement(sql);
+             ResultSet rs = ps.executeQuery()) {
+            if (rs.next()) {
+                return rs.getInt(1);
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+        return 0;
+    }
+
     // Get contracts by employee ID
     public List<Contract> getContractsByEmployeeId(int employeeId) {
         List<Contract> contracts = new ArrayList<>();

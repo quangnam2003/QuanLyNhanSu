@@ -75,6 +75,23 @@ public class DepartmentService {
         return departments;
     }
 
+    /**
+     * Get total number of departments.
+     */
+    public int getTotalDepartmentsCount() {
+        String sql = "SELECT COUNT(*) FROM departments";
+        try (Connection conn = DBUtil.getConnection();
+             PreparedStatement ps = conn.prepareStatement(sql);
+             ResultSet rs = ps.executeQuery()) {
+            if (rs.next()) {
+                return rs.getInt(1);
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+        return 0;
+    }
+
     public List<String> getAllDepartmentNames() {
         List<String> list = new ArrayList<>();
         String sql = "SELECT department_name FROM departments ORDER BY department_name";

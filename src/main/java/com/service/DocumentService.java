@@ -42,6 +42,23 @@ public class DocumentService {
         return documents;
     }
 
+    /**
+     * Get total number of documents.
+     */
+    public int getTotalDocumentsCount() {
+        String sql = "SELECT COUNT(*) FROM documents";
+        try (Connection conn = DBUtil.getConnection();
+             PreparedStatement ps = conn.prepareStatement(sql);
+             ResultSet rs = ps.executeQuery()) {
+            if (rs.next()) {
+                return rs.getInt(1);
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+        return 0;
+    }
+
     public String addDocument(Document document) {
         String sql = "INSERT INTO documents (title, file_name, file_data, category) VALUES (?, ?, ?, ?)";
 

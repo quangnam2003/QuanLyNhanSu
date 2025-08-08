@@ -288,6 +288,23 @@ public class EmployeeService {
         return stats;
     }
 
+    /**
+     * Get total number of employees in the system.
+     */
+    public int getTotalEmployeesCount() {
+        String sql = "SELECT COUNT(*) FROM employees";
+        try (Connection conn = DBUtil.getConnection();
+             PreparedStatement ps = conn.prepareStatement(sql);
+             ResultSet rs = ps.executeQuery()) {
+            if (rs.next()) {
+                return rs.getInt(1);
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+        return 0;
+    }
+
     public boolean addEmployee(Employee emp) {
         String insertSql = """
         INSERT INTO employees (

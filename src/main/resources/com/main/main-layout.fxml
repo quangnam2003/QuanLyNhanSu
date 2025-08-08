@@ -32,7 +32,16 @@
             <Button fx:id="organizationBtn" text="Tổ chức" onAction="#handleMenu" styleClass="nav-button"/>
             <Button fx:id="contractBtn" text="Hợp đồng" onAction="#handleMenu" styleClass="nav-button"/>
             <Button fx:id="reportBtn" text="Tài Liệu" onAction="#handleMenu" styleClass="nav-button"/>
-            <Button fx:id="settingsBtn" text="Cài đặt" onAction="#handleMenu" styleClass="nav-button"/>
+            <Button fx:id="settingsBtn" text="Quản Lý" onAction="#handleMenu" styleClass="nav-button"/>
+            <Button fx:id="btnLogout"
+                    text="Đăng xuất"
+                    onAction="#handleLogout"
+                    layoutX="100"
+                    layoutY="1000"
+                    prefWidth="100"
+                    style="-fx-background-color: #d9534f; -fx-text-fill: white;" />
+
+
         </VBox>
     </left>
 

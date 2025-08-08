@@ -14,7 +14,8 @@
 
     <!-- VBox đăng nhập chính -->
     <VBox alignment="CENTER" spacing="15"
-          maxWidth="320" maxHeight="350"
+          prefWidth="410" prefHeight="440"
+          maxWidth="410" maxHeight="440"
           styleClass="vbox-login">
 
         <ImageView fitHeight="48" fitWidth="48" pickOnBounds="true" preserveRatio="true">

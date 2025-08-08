@@ -59,6 +59,22 @@
     -fx-font-weight: bold;
 }
 
+/* Button bị vô hiệu hóa do không đủ quyền */
+.nav-button.disabled-button {
+    -fx-text-fill: #95a5a6;
+    -fx-opacity: 0.6;
+    -fx-cursor: default;
+}
+
+.nav-button.disabled-button:hover {
+    -fx-background-color: rgba(231, 76, 60, 0.2);
+    -fx-text-fill: #e74c3c;
+}
+
+.nav-button.disabled-button:pressed {
+    -fx-background-color: transparent;
+}
+
 /* Content area */
 .content-area {
     -fx-background-color: #ecf0f1;
@@ -170,3 +186,33 @@
     -fx-font-size: 16px;
     -fx-text-fill: #34495e;
 }
+
+/* Nút hành động (Save, Cancel) */
+.action-button {
+    -fx-font-size: 14px;
+    -fx-padding: 8 20;
+    -fx-background-radius: 5;
+    -fx-border-radius: 5;
+    -fx-cursor: hand;
+    -fx-text-fill: white;
+    -fx-font-weight: bold;
+}
+
+/* Nút Lưu */
+.save-button {
+    -fx-background-color: #27ae60; /* xanh lá */
+}
+
+.save-button:hover {
+    -fx-background-color: #2ecc71;
+}
+
+/* Nút Hủy */
+.cancel-button {
+    -fx-background-color: #e74c3c; /* đỏ */
+}
+
+.cancel-button:hover {
+    -fx-background-color: #c0392b;
+}
+
