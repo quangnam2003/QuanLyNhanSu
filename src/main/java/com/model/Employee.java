@@ -18,8 +18,7 @@ public class Employee {
     private int roleId;
     private int managerId;
     private LocalDate hireDate;
-    private String employmentStatus; // "Active", "Inactive", etc.
-    private float salaryGrade;
+    private String employmentStatus;
     private String emergencyContactName;
     private String emergencyContactPhone;
     private String emergencyContactRelationship;
@@ -31,7 +30,7 @@ public class Employee {
     public Employee() {
     }
 
-    public Employee(int id, String firstName, String lastName, String email, String phone, String citizenId, LocalDate dateOfBirth, String gender, String address, String avatarUrl, int departmentId, int positionId, int roleId, int managerId, LocalDate hireDate, String employmentStatus, float salaryGrade, String emergencyContactName, String emergencyContactPhone, String emergencyContactRelationship, String notes) {
+    public Employee(int id, String firstName, String lastName, String email, String phone, String citizenId, LocalDate dateOfBirth, String gender, String address, String avatarUrl, int departmentId, int positionId, int roleId, int managerId, LocalDate hireDate, String employmentStatus, String emergencyContactName, String emergencyContactPhone, String emergencyContactRelationship, String notes) {
         this.id = id;
         this.firstName = firstName;
         this.lastName = lastName;
@@ -48,7 +47,6 @@ public class Employee {
         this.managerId = managerId;
         this.hireDate = hireDate;
         this.employmentStatus = employmentStatus;
-        this.salaryGrade = salaryGrade;
         this.emergencyContactName = emergencyContactName;
         this.emergencyContactPhone = emergencyContactPhone;
         this.emergencyContactRelationship = emergencyContactRelationship;
@@ -185,14 +183,6 @@ public class Employee {
 
     public void setEmploymentStatus(String employmentStatus) {
         this.employmentStatus = employmentStatus;
-    }
-
-    public float getSalaryGrade() {
-        return salaryGrade;
-    }
-
-    public void setSalaryGrade(float salaryGrade) {
-        this.salaryGrade = salaryGrade;
     }
 
     public String getEmergencyContactName() {

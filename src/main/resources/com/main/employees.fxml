@@ -25,22 +25,32 @@
         </HBox>
 
         <!-- Search and Filter -->
-        <HBox spacing="15" alignment="CENTER_LEFT">
-            <TextField fx:id="searchField" promptText="Tìm kiếm nhân viên..."
-                       prefWidth="300"
-                       style="-fx-padding: 10; -fx-background-radius: 5; -fx-border-color: #ddd; -fx-border-radius: 5;" />
+        <HBox spacing="20" alignment="CENTER_LEFT">
 
-            <VBox spacing="5">
+            <!-- Tìm kiếm -->
+            <VBox spacing="5" alignment="CENTER_LEFT">
+                <Label text="Tìm kiếm" />
+                <TextField fx:id="searchField" promptText="Tìm kiếm nhân viên..."
+                           prefWidth="300"
+                           style="-fx-padding: 10; -fx-background-radius: 5; -fx-border-color: #ddd; -fx-border-radius: 5;" />
+            </VBox>
+
+            <!-- Phòng ban -->
+            <VBox spacing="5" alignment="CENTER_LEFT">
                 <Label text="Phòng ban" />
                 <ComboBox fx:id="departmentFilter" promptText="Chọn phòng ban"
-                          prefWidth="150" style="-fx-padding: 10;" />
+                          prefWidth="180"
+                          style="-fx-padding: 8;" />
             </VBox>
 
-            <VBox spacing="5">
+            <!-- Chức vụ -->
+            <VBox spacing="5" alignment="CENTER_LEFT">
                 <Label text="Chức vụ" />
                 <ComboBox fx:id="positionFilter" promptText="Chọn chức vụ"
-                          prefWidth="150" style="-fx-padding: 10;" />
+                          prefWidth="180"
+                          style="-fx-padding: 8;" />
             </VBox>
+
         </HBox>
 
 
@@ -57,7 +67,6 @@
                 <TableColumn fx:id="colPosition" text="Chức vụ" prefWidth="150"/>
                 <TableColumn fx:id="colHireDate" text="Ngày vào làm" prefWidth="120"/>
                 <TableColumn fx:id="colStatus" text="Trạng thái" prefWidth="100"/>
-                <TableColumn fx:id="colSalaryGrade" text="Bậc Lương" prefWidth="100"/>
                 <TableColumn fx:id="actionColumn" text="Hành động" prefWidth="100"/>
             </columns>
         </TableView>

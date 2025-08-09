@@ -10,6 +10,7 @@ module com.example.quanlynhansu {
     requires org.kordamp.bootstrapfx.core;
     requires com.almasb.fxgl.all;
     requires java.sql;
+    requires java.desktop;
 
     opens com.main to javafx.fxml;
     exports com.main;

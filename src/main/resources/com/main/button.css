@@ -1,0 +1,15 @@
+.button-save {
+    -fx-background-color: #27ae60;
+    -fx-text-fill: white;
+}
+.button-save:hover {
+    -fx-background-color: #2ecc71; /* xanh nhạt hơn khi hover */
+}
+
+.button-cancel {
+    -fx-background-color: #c0392b;
+    -fx-text-fill: white;
+}
+.button-cancel:hover {
+    -fx-background-color: #e74c3c; /* đỏ sáng hơn khi hover */
+}

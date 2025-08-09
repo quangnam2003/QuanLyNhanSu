@@ -16,6 +16,7 @@
         <HBox alignment="CENTER_LEFT" spacing="20" style="-fx-background-color: linear-gradient(to right, #667eea, #764ba2); -fx-padding: 20; -fx-background-radius: 12; -fx-effect: dropshadow(three-pass-box, rgba(0,0,0,0.2), 15, 0, 0, 3);">
             <Label text="🏢 Cơ cấu Tổ chức" style="-fx-font-size: 28px; -fx-font-weight: bold; -fx-text-fill: white;"/>
             <Region HBox.hgrow="ALWAYS"/>
+
             <Button fx:id="btnAddDepartment" 
                     text="✚ Thêm phòng ban" 
                     onAction="#handleAddDepartment"
@@ -47,6 +48,7 @@
             <HBox alignment="CENTER_LEFT" spacing="15">
                 <Label text="📋 Danh sách phòng ban" style="-fx-font-size: 22px; -fx-font-weight: bold; -fx-text-fill: #2c3e50;"/>
                 <Region HBox.hgrow="ALWAYS"/>
+                <Label fx:id="lblDebugInfo" text="👥 Debug: Đang tải..." style="-fx-font-size: 12px; -fx-text-fill: #e67e22; -fx-background-color: #fdf2e9; -fx-padding: 6 12; -fx-background-radius: 15;"/>
                 <Label fx:id="lblTotalDepartments" text="Tổng: 0 phòng ban" style="-fx-font-size: 14px; -fx-text-fill: #7f8c8d; -fx-background-color: #ecf0f1; -fx-padding: 8 15; -fx-background-radius: 20;"/>
             </HBox>
             
@@ -59,7 +61,7 @@
                     <TableColumn fx:id="colManagerName" text="👤 Trưởng phòng" prefWidth="200"/>
                     <TableColumn fx:id="colEmployeeCount" text="👥 Số nhân viên" prefWidth="140" 
                                 style="-fx-alignment: CENTER;"/>
-                    <TableColumn fx:id="actionColumn" text="⚙️ Thao tác" prefWidth="180" 
+                    <TableColumn fx:id="actionColumn" text="⚙️ Thao tác" prefWidth="240" 
                                 style="-fx-alignment: CENTER;"/>
                 </columns>
                 <placeholder>

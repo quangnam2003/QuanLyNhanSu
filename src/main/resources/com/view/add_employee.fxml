@@ -7,7 +7,7 @@
 <BorderPane xmlns="http://javafx.com/javafx"
             xmlns:fx="http://javafx.com/fxml"
             fx:controller="com.controller.AddEmployeeController"
-            prefWidth="700" prefHeight="600"
+            prefWidth="700" prefHeight="700"
             style="-fx-background-color: #ffffff;">
 
     <!-- Nội dung chính -->
@@ -55,9 +55,6 @@
             <Label text="Trạng thái làm việc:" GridPane.rowIndex="10" GridPane.columnIndex="0"/>
             <ComboBox fx:id="cbStatus" promptText="Chọn trạng thái" GridPane.rowIndex="10" GridPane.columnIndex="1"/>
 
-            <Label text="Bậc lương:" GridPane.rowIndex="11" GridPane.columnIndex="0"/>
-            <TextField fx:id="txtSalaryGrade" GridPane.rowIndex="11" GridPane.columnIndex="1"/>
-
             <Label text="Người liên hệ khẩn:" GridPane.rowIndex="12" GridPane.columnIndex="0"/>
             <TextField fx:id="txtEmergencyName" GridPane.rowIndex="12" GridPane.columnIndex="1"/>
 
@@ -75,9 +72,12 @@
             <padding>
                 <Insets top="20" right="20" bottom="20" left="20"/>
             </padding>
-            <Button fx:id="btnSave" text="Lưu" style="-fx-background-color: #27ae60; -fx-text-fill: white;" onAction="#handleSave"
-                    styleClass="action-button save-button"/>
-            <Button fx:id="btnCancel" text="Hủy" onAction="#handleCancel" styleClass="action-button cancel-button"/>
+            <Button fx:id="btnSave" text="Lưu"
+                    onAction="#handleSave"
+                    styleClass="button-save"/>
+            <Button fx:id="btnCancel" text="Hủy"
+                    onAction="#handleCancel"
+                    styleClass="button-cancel"/>
         </HBox>
     </bottom>
 </BorderPane>

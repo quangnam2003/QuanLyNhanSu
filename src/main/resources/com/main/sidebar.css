@@ -59,6 +59,22 @@
     -fx-font-weight: bold;
 }
 
+/* Button bị vô hiệu hóa do không đủ quyền */
+.nav-button.disabled-button {
+    -fx-text-fill: #95a5a6;
+    -fx-opacity: 0.6;
+    -fx-cursor: default;
+}
+
+.nav-button.disabled-button:hover {
+    -fx-background-color: rgba(231, 76, 60, 0.2);
+    -fx-text-fill: #e74c3c;
+}
+
+.nav-button.disabled-button:pressed {
+    -fx-background-color: transparent;
+}
+
 /* Content area */
 .content-area {
     -fx-background-color: #ecf0f1;

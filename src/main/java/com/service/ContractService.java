@@ -90,9 +90,14 @@ public class ContractService {
         }
 
         if (status != null && !status.isEmpty()) {
-            sql.append(" AND ec.status = ?");
-            parameters.add(status);
+            if (status.equals("Đang hoạt động")) {
+                sql.append(" AND (ec.end_date IS NULL OR ec.end_date > CURDATE())");
+            } else if (status.equals("Đã hết hạn")) {
+                sql.append(" AND ec.end_date IS NOT NULL AND ec.end_date < CURDATE()");
+            }
+            // status khác thì không lọc
         }
+
 
         if (fromDate != null) {
             sql.append(" AND ec.start_date >= ?");
@@ -126,8 +131,8 @@ public class ContractService {
         String sql = """
             INSERT INTO employment_contracts 
             (contract_number, employee_id, contract_type_id, start_date, end_date, 
-             salary, allowances, benefits, terms_conditions, status, signed_date, notes, created_by)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+             salary, allowances, benefits, terms_conditions, signed_date, notes, created_by)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
             """;
 
         try (Connection conn = DBUtil.getConnection();
@@ -142,10 +147,9 @@ public class ContractService {
             stmt.setBigDecimal(7, contract.getAllowances());
             stmt.setString(8, contract.getBenefits());
             stmt.setString(9, contract.getTermsConditions());
-            stmt.setString(10, contract.getStatus());
-            stmt.setDate(11, contract.getSignedDate() != null ? Date.valueOf(contract.getSignedDate()) : null);
-            stmt.setString(12, contract.getNotes());
-            stmt.setInt(13, contract.getCreatedBy());
+            stmt.setDate(10, contract.getSignedDate() != null ? Date.valueOf(contract.getSignedDate()) : null);
+            stmt.setString(11, contract.getNotes());
+            stmt.setInt(12, contract.getCreatedBy());
 
             return stmt.executeUpdate() > 0;
         } catch (SQLException e) {
@@ -160,7 +164,7 @@ public class ContractService {
             UPDATE employment_contracts 
             SET contract_number = ?, employee_id = ?, contract_type_id = ?, start_date = ?, 
                 end_date = ?, salary = ?, allowances = ?, benefits = ?, terms_conditions = ?, 
-                status = ?, signed_date = ?, notes = ?
+                signed_date = ?, notes = ?
             WHERE id = ?
             """;
 
@@ -176,10 +180,9 @@ public class ContractService {
             stmt.setBigDecimal(7, contract.getAllowances());
             stmt.setString(8, contract.getBenefits());
             stmt.setString(9, contract.getTermsConditions());
-            stmt.setString(10, contract.getStatus());
-            stmt.setDate(11, contract.getSignedDate() != null ? Date.valueOf(contract.getSignedDate()) : null);
-            stmt.setString(12, contract.getNotes());
-            stmt.setInt(13, contract.getId());
+            stmt.setDate(10, contract.getSignedDate() != null ? Date.valueOf(contract.getSignedDate()) : null);
+            stmt.setString(11, contract.getNotes());
+            stmt.setInt(12, contract.getId());
 
             return stmt.executeUpdate() > 0;
         } catch (SQLException e) {
@@ -208,9 +211,9 @@ public class ContractService {
         Map<String, Integer> stats = new HashMap<>();
         String sql = """
             SELECT 
-                SUM(CASE WHEN status = 'Active' THEN 1 ELSE 0 END) as active_contracts,
-                SUM(CASE WHEN status = 'Active' AND end_date IS NOT NULL AND end_date BETWEEN CURDATE() AND DATE_ADD(CURDATE(), INTERVAL 30 DAY) THEN 1 ELSE 0 END) as expiring_soon,
-                SUM(CASE WHEN status = 'Expired' OR (end_date IS NOT NULL AND end_date < CURDATE()) THEN 1 ELSE 0 END) as expired_contracts
+                SUM(CASE WHEN end_date IS NULL OR end_date > CURDATE() THEN 1 ELSE 0 END) as active_contracts,
+                SUM(CASE WHEN end_date IS NOT NULL AND end_date BETWEEN CURDATE() AND DATE_ADD(CURDATE(), INTERVAL 30 DAY) THEN 1 ELSE 0 END) as expiring_soon,
+                SUM(CASE WHEN end_date IS NOT NULL AND end_date < CURDATE() THEN 1 ELSE 0 END) as expired_contracts
             FROM employment_contracts
             """;
 
@@ -236,7 +239,7 @@ public class ContractService {
         String sql = """
             SELECT ct.type_name, COUNT(ec.id) as count
             FROM contract_types ct
-            LEFT JOIN employment_contracts ec ON ct.id = ec.contract_type_id AND ec.status = 'Active'
+            LEFT JOIN employment_contracts ec ON ct.id = ec.contract_type_id AND (ec.end_date IS NULL OR ec.end_date > CURDATE())
             GROUP BY ct.id, ct.type_name
             """;
 
@@ -252,6 +255,23 @@ public class ContractService {
         }
 
         return stats;
+    }
+
+    /**
+     * Get total number of contracts.
+     */
+    public int getTotalContractsCount() {
+        String sql = "SELECT COUNT(*) FROM employment_contracts";
+        try (Connection conn = DBUtil.getConnection();
+             PreparedStatement ps = conn.prepareStatement(sql);
+             ResultSet rs = ps.executeQuery()) {
+            if (rs.next()) {
+                return rs.getInt(1);
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+        return 0;
     }
 
     // Get contracts by employee ID
@@ -283,28 +303,59 @@ public class ContractService {
     }
 
     // Generate next contract number
-    public String generateContractNumber() {
-        String sql = "SELECT contract_number FROM employment_contracts ORDER BY id DESC LIMIT 1";
+    public String generateContractNumber(String contractTypeName) {
+        String prefix = getContractPrefix(contractTypeName);
+
+        String sql = "SELECT contract_number FROM employment_contracts WHERE contract_number LIKE ? ORDER BY id DESC LIMIT 1";
 
         try (Connection conn = DBUtil.getConnection();
-             PreparedStatement stmt = conn.prepareStatement(sql);
-             ResultSet rs = stmt.executeQuery()) {
+             PreparedStatement stmt = conn.prepareStatement(sql)) {
+
+            stmt.setString(1, prefix + "%");
+            ResultSet rs = stmt.executeQuery();
 
             if (rs.next()) {
                 String lastNumber = rs.getString("contract_number");
-                // Extract number from format like "HD2024-015"
+                // Extract number from format like "HD1Y-015"
                 String[] parts = lastNumber.split("-");
                 if (parts.length == 2) {
                     int nextNum = Integer.parseInt(parts[1]) + 1;
-                    return String.format("HD%d-%03d", LocalDate.now().getYear(), nextNum);
+                    return String.format("%s-%03d", prefix, nextNum);
                 }
             }
         } catch (SQLException e) {
             e.printStackTrace();
         }
 
-        // Default format if no previous contracts exist
-        return String.format("HD%d-001", LocalDate.now().getYear());
+        // Default format if no previous contracts exist for this type
+        return String.format("%s-001", prefix);
+    }
+
+    // THÊM MỚI: Get contract prefix based on contract type
+    private String getContractPrefix(String contractTypeName) {
+        if (contractTypeName == null) {
+            return "HD"; // Default prefix
+        }
+
+        switch (contractTypeName) {
+            case "Hợp đồng không xác định thời hạn":
+                return "HDVT"; // Hợp đồng vô thời hạn
+            case "Hợp đồng xác định thời hạn 1 năm":
+                return "HD1Y"; // Hợp đồng 1 năm
+            case "Hợp đồng xác định thời hạn 2 năm":
+                return "HD2Y"; // Hợp đồng 2 năm
+            case "Hợp đồng thời vụ":
+                return "HDTV"; // Hợp đồng thời vụ
+            case "Hợp đồng thử việc":
+                return "HDTH"; // Hợp đồng thử việc
+            default:
+                return "HD"; // Default prefix
+        }
+    }
+
+    // Generate next contract number (method cũ để tương thích)
+    public String generateContractNumber() {
+        return generateContractNumber(null);
     }
 
     // Helper method to map ResultSet to Contract object
@@ -331,7 +382,6 @@ public class ContractService {
         contract.setAllowances(rs.getBigDecimal("allowances"));
         contract.setBenefits(rs.getString("benefits"));
         contract.setTermsConditions(rs.getString("terms_conditions"));
-        contract.setStatus(rs.getString("status"));
 
         Date signedDate = rs.getDate("signed_date");
         if (signedDate != null) {

@@ -16,7 +16,7 @@ public class Contract {
     private BigDecimal allowances;
     private String benefits;
     private String termsConditions;
-    private String status;
+    //private String status;
     private LocalDate signedDate;
     private String notes;
     private int createdBy;
@@ -27,7 +27,8 @@ public class Contract {
     public Contract(int id, String contractNumber, int employeeId, String employeeName,
                     int contractTypeId, String contractTypeName, LocalDate startDate,
                     LocalDate endDate, BigDecimal salary, BigDecimal allowances,
-                    String benefits, String termsConditions, String status,
+                    String benefits, String termsConditions,
+                    //String status,
                     LocalDate signedDate, String notes, int createdBy) {
         this.id = id;
         this.contractNumber = contractNumber;
@@ -41,7 +42,7 @@ public class Contract {
         this.allowances = allowances;
         this.benefits = benefits;
         this.termsConditions = termsConditions;
-        this.status = status;
+        //this.status = status;
         this.signedDate = signedDate;
         this.notes = notes;
         this.createdBy = createdBy;
@@ -144,12 +145,20 @@ public class Contract {
         this.termsConditions = termsConditions;
     }
 
-    public String getStatus() {
-        return status;
-    }
+//    public String getStatus() {
+//        return status;
+//    }
+//
+//    public void setStatus(String status) {
+//        this.status = status;
+//    }
 
-    public void setStatus(String status) {
-        this.status = status;
+    public String getStatus() {
+        if (endDate == null || endDate.isAfter(LocalDate.now())) {
+            return "Đang hoạt động";
+        } else {
+            return "Đã hết hạn";
+        }
     }
 
     public LocalDate getSignedDate() {
@@ -200,7 +209,7 @@ public class Contract {
                 ", contractNumber='" + contractNumber + '\'' +
                 ", employeeName='" + employeeName + '\'' +
                 ", contractTypeName='" + contractTypeName + '\'' +
-                ", status='" + status + '\'' +
+                ", status='" + getStatus() + '\'' +
                 '}';
     }
 }

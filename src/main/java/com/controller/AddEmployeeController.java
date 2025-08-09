@@ -26,7 +26,6 @@ public class AddEmployeeController {
     @FXML private ComboBox<Position> cbPosition;
     @FXML private DatePicker dateHire;
     @FXML private ComboBox<String> cbStatus;
-    @FXML private TextField txtSalaryGrade;
     @FXML private TextField txtEmergencyName;
     @FXML private TextField txtEmergencyPhone;
     @FXML private TextField txtEmergencyRelation;
@@ -40,8 +39,8 @@ public class AddEmployeeController {
 
     @FXML
     public void initialize() {
-        cbGender.setItems(FXCollections.observableArrayList("Male", "Female", "Other"));
-        cbStatus.setItems(FXCollections.observableArrayList("Active", "Inactive", "Terminated", "On Leave"));
+        cbGender.setItems(FXCollections.observableArrayList("Nam", "Nữ"));
+        cbStatus.setItems(FXCollections.observableArrayList("Đang làm việc", "Đã nghỉ việc"));
 
         cbDepartment.setItems(FXCollections.observableArrayList(departmentService.getAllDepartments()));
         cbPosition.setItems(FXCollections.observableArrayList(positionService.getAllPositions()));
@@ -80,7 +79,6 @@ public class AddEmployeeController {
             emp.setGender(cbGender.getValue());
             emp.setHireDate(dateHire.getValue());
             emp.setEmploymentStatus(cbStatus.getValue());
-            emp.setSalaryGrade(Float.parseFloat(txtSalaryGrade.getText().trim()));
             emp.setEmergencyContactName(txtEmergencyName.getText().trim());
             emp.setEmergencyContactPhone(txtEmergencyPhone.getText().trim());
             emp.setEmergencyContactRelationship(txtEmergencyRelation.getText().trim());
@@ -151,9 +149,17 @@ public class AddEmployeeController {
         if (txtFirstName.getText().isBlank()) msg.append("Vui lòng nhập Họ.\n");
         if (txtLastName.getText().isBlank()) msg.append("Vui lòng nhập Tên.\n");
         if (txtEmail.getText().isBlank()) msg.append("Vui lòng nhập Email.\n");
+        else if (employeeService.isEmailExists(txtEmail.getText().trim(),
+                editingEmployee != null ? editingEmployee.getId() : null)) {
+            msg.append("Email đã tồn tại trong hệ thống.\n");
+        }
         else if (!txtEmail.getText().matches("^[\\w.-]+@[\\w.-]+\\.\\w{2,}$")) msg.append("Email không hợp lệ.\n");
 
         if (txtPhone.getText().isBlank()) msg.append("Vui lòng nhập Số điện thoại.\n");
+        else if (employeeService.isPhoneExists(txtPhone.getText().trim(),
+                editingEmployee != null ? editingEmployee.getId() : null)) {
+            msg.append("Số điện thoại đã tồn tại trong hệ thống.\n");
+        }
         else if (!txtPhone.getText().matches("^\\d{8,15}$")) msg.append("Số điện thoại không hợp lệ.\n");
 
         if (txtCitizenId.getText().isBlank()) msg.append("Vui lòng nhập CCCD.\n");
@@ -166,15 +172,6 @@ public class AddEmployeeController {
 
         if (dateHire.getValue() == null) msg.append("Vui lòng chọn Ngày vào làm.\n");
         if (cbStatus.getValue() == null) msg.append("Vui lòng chọn Trạng thái làm việc.\n");
-
-        if (txtSalaryGrade.getText().isBlank()) msg.append("Vui lòng nhập Bậc lương.\n");
-        else {
-            try {
-                Float.parseFloat(txtSalaryGrade.getText().trim());
-            } catch (NumberFormatException e) {
-                msg.append("Bậc lương phải là số.\n");
-            }
-        }
 
         if (!msg.isEmpty()) {
             showAlert(Alert.AlertType.ERROR, "Lỗi nhập liệu", msg.toString());
@@ -210,7 +207,6 @@ public class AddEmployeeController {
             dateHire.setValue(editingEmployee.getHireDate());
 
         cbStatus.setValue(editingEmployee.getEmploymentStatus());
-        txtSalaryGrade.setText(String.valueOf(editingEmployee.getSalaryGrade()));
         txtEmergencyName.setText(editingEmployee.getEmergencyContactName());
         txtEmergencyPhone.setText(editingEmployee.getEmergencyContactPhone());
         txtEmergencyRelation.setText(editingEmployee.getEmergencyContactRelationship());

@@ -14,31 +14,31 @@
     <VBox styleClass="dashboard-container" spacing="25">
         
         <!-- Header Section -->
-        <VBox spacing="10">
+            <VBox spacing="10">
             <Label text="Dashboard" styleClass="dashboard-title"/>
             <Label text="Tổng quan hệ thống quản lý nhân sự" styleClass="dashboard-subtitle"/>
         </VBox>
 
         <!-- Stats Cards Section -->
-        <HBox spacing="20" styleClass="stats-section">
+            <HBox spacing="20" styleClass="stats-section">
             <VBox styleClass="stats-card">
-                <Label text="150" styleClass="stats-number"/>
+                <Label fx:id="totalEmployeesLabel" text="0" styleClass="stats-number"/>
                 <Label text="Tổng nhân viên" styleClass="stats-label"/>
             </VBox>
             
             <VBox styleClass="stats-card">
-                <Label text="12" styleClass="stats-number"/>
+                <Label fx:id="totalDepartmentsLabel" text="0" styleClass="stats-number"/>
                 <Label text="Phòng ban" styleClass="stats-label"/>
             </VBox>
             
             <VBox styleClass="stats-card">
-                <Label text="85" styleClass="stats-number"/>
+                <Label fx:id="totalContractsLabel" text="0" styleClass="stats-number"/>
                 <Label text="Hợp đồng" styleClass="stats-label"/>
             </VBox>
             
             <VBox styleClass="stats-card">
-                <Label text="23" styleClass="stats-number"/>
-                <Label text="Báo cáo" styleClass="stats-label"/>
+                <Label fx:id="totalReportsLabel" text="0" styleClass="stats-number"/>
+                <Label text="Tài liệu" styleClass="stats-label"/>
             </VBox>
         </HBox>
 
@@ -69,57 +69,26 @@
                     <Label text="Quản lý hợp đồng lao động" styleClass="card-description"/>
                 </VBox>
 
-                <!-- Báo cáo Card -->
-                <VBox styleClass="dashboard-card" onMouseClicked="#openReports">
-                    <Label text="📊" styleClass="card-icon"/>
-                    <Label text="Báo cáo" styleClass="card-title"/>
-                    <Label text="Thống kê và phân tích dữ liệu" styleClass="card-description"/>
+                <!-- Tài liệu Card -->
+                <VBox styleClass="dashboard-card" onMouseClicked="#openDocuments">
+                    <Label text="📄" styleClass="card-icon"/>
+                    <Label text="Tài liệu" styleClass="card-title"/>
+                    <Label text="Quản lý và xem tài liệu công ty" styleClass="card-description"/>
                 </VBox>
 
-                <!-- Cài đặt Card -->
+                <!-- Quản lý Card -->
                 <VBox styleClass="dashboard-card" onMouseClicked="#openSettings">
                     <Label text="⚙️" styleClass="card-icon"/>
-                    <Label text="Cài đặt" styleClass="card-title"/>
+                    <Label text="Quản lý" styleClass="card-title"/>
                     <Label text="Cấu hình hệ thống" styleClass="card-description"/>
                 </VBox>
 
-                <!-- Thống kê Card -->
-                <VBox styleClass="dashboard-card" onMouseClicked="#openStatistics">
-                    <Label text="📈" styleClass="card-icon"/>
-                    <Label text="Thống kê" styleClass="card-title"/>
-                    <Label text="Biểu đồ và chỉ số KPI" styleClass="card-description"/>
-                </VBox>
+                <!-- -->
                 
             </FlowPane>
         </VBox>
 
-        <!-- Recent Activity Section -->
-        <VBox spacing="15">
-            <Label text="Hoạt động gần đây" style="-fx-font-size: 20px; -fx-font-weight: bold; -fx-text-fill: #2c3e50;"/>
-            
-            <VBox spacing="10" style="-fx-background-color: #ffffff; -fx-background-radius: 8; -fx-padding: 20; -fx-effect: dropshadow(three-pass-box, rgba(0,0,0,0.1), 10, 0, 0, 2);">
-                <HBox spacing="15" alignment="CENTER_LEFT">
-                    <Label text="•" style="-fx-text-fill: #27ae60; -fx-font-size: 16px;"/>
-                    <Label text="Nguyễn Văn A đã được thêm vào hệ thống" style="-fx-font-size: 14px; -fx-text-fill: #2c3e50;"/>
-                    <Region HBox.hgrow="ALWAYS"/>
-                    <Label text="2 giờ trước" style="-fx-font-size: 12px; -fx-text-fill: #7f8c8d;"/>
-                </HBox>
-                
-                <HBox spacing="15" alignment="CENTER_LEFT">
-                    <Label text="•" style="-fx-text-fill: #3498db; -fx-font-size: 16px;"/>
-                    <Label text="Báo cáo tháng 12 đã được tạo" style="-fx-font-size: 14px; -fx-text-fill: #2c3e50;"/>
-                    <Region HBox.hgrow="ALWAYS"/>
-                    <Label text="5 giờ trước" style="-fx-font-size: 12px; -fx-text-fill: #7f8c8d;"/>
-                </HBox>
-                
-                <HBox spacing="15" alignment="CENTER_LEFT">
-                    <Label text="•" style="-fx-text-fill: #e74c3c; -fx-font-size: 16px;"/>
-                    <Label text="Hợp đồng của Trần Thị B sắp hết hạn" style="-fx-font-size: 14px; -fx-text-fill: #2c3e50;"/>
-                    <Region HBox.hgrow="ALWAYS"/>
-                    <Label text="1 ngày trước" style="-fx-font-size: 12px; -fx-text-fill: #7f8c8d;"/>
-                </HBox>
-            </VBox>
-        </VBox>
+        <!-- -->
 
     </VBox>
 </ScrollPane> 
