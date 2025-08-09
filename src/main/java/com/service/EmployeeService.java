@@ -17,7 +17,8 @@ public class EmployeeService {
         String sql = "SELECT e.*, d.department_name, p.position_name " +
                 "FROM employees e " +
                 "LEFT JOIN departments d ON e.department_id = d.id " +
-                "LEFT JOIN positions p ON e.position_id = p.id";
+                "LEFT JOIN positions p ON e.position_id = p.id " +
+                "WHERE e.is_deleted = 0";
 
         try (Connection conn = DBUtil.getConnection();
              PreparedStatement stmt = conn.prepareStatement(sql);
@@ -79,8 +80,9 @@ public class EmployeeService {
             FROM employees e
             LEFT JOIN departments d ON e.department_id = d.id
             LEFT JOIN positions p ON e.position_id = p.id
-            WHERE 1=1
+            WHERE e.is_deleted = 0
         """);
+
 
         // Thêm điều kiện nếu có lọc theo phòng ban
         if (departmentName != null && !departmentName.equals("Tất cả")) {
@@ -133,7 +135,7 @@ public class EmployeeService {
 
     public List<Employee> searchEmployees(String keyword, Integer departmentId, Integer positionId) {
         List<Employee> list = new ArrayList<>();
-        StringBuilder sql = new StringBuilder("SELECT * FROM employees WHERE 1=1");
+        StringBuilder sql = new StringBuilder("SELECT * FROM employees WHERE is_deleted = 0");
 
         if (keyword != null && !keyword.isEmpty()) {
             sql.append(" AND (full_name LIKE ? OR email LIKE ?)");
@@ -202,17 +204,21 @@ public class EmployeeService {
         List<Employee> list = new ArrayList<>();
 
         String sql = """
-        SELECT e.*, d.department_name, p.position_name
-        FROM employees e
-        LEFT JOIN departments d ON e.department_id = d.id
-        LEFT JOIN positions p ON e.position_id = p.id
-        WHERE e.id LIKE ?
-            OR e.first_name LIKE ?
-            OR e.last_name LIKE ?
-            OR CONCAT(e.first_name, ' ', e.last_name) LIKE ?
-            OR e.phone LIKE ?
-            OR e.email LIKE ?
+            SELECT e.*, d.department_name, p.position_name
+            FROM employees e
+            LEFT JOIN departments d ON e.department_id = d.id
+            LEFT JOIN positions p ON e.position_id = p.id
+            WHERE e.is_deleted = 0
+              AND (
+                   e.id LIKE ?
+                OR e.first_name LIKE ?
+                OR e.last_name LIKE ?
+                OR CONCAT(e.first_name, ' ', e.last_name) LIKE ?
+                OR e.phone LIKE ?
+                OR e.email LIKE ?
+              )
         """;
+
 
         try (Connection conn = DBUtil.getConnection();
              PreparedStatement ps = conn.prepareStatement(sql)) {
@@ -254,9 +260,9 @@ public class EmployeeService {
     public Map<String, Integer> getEmployeeStats() {
         Map<String, Integer> stats = new HashMap<>();
 
-        String totalSql = "SELECT COUNT(*) FROM employees";
-        String workingSql = "SELECT COUNT(*) FROM employees WHERE employment_status = 'Active'";
-        String inactiveSql = "SELECT COUNT(*) FROM employees WHERE employment_status IN ('Inactive', 'Terminated')";
+        String totalSql = "SELECT COUNT(*) FROM employees WHERE is_deleted = 0";
+        String workingSql = "SELECT COUNT(*) FROM employees WHERE employment_status = 'Đang làm việc' AND is_deleted = 0";
+        String inactiveSql = "SELECT COUNT(*) FROM employees WHERE employment_status IN ('Đã nghỉ việc') AND is_deleted = 0";
 
         try (Connection conn = DBUtil.getConnection()) {
             // Tổng
@@ -344,7 +350,7 @@ public class EmployeeService {
 
 
     public void deleteEmployee(int id) {
-        String sql = "DELETE FROM employees WHERE id = ?";
+        String sql = "UPDATE employees SET is_deleted = 1 WHERE id = ?";
 
         try (Connection conn = DBUtil.getConnection();
              PreparedStatement stmt = conn.prepareStatement(sql)) {
@@ -353,9 +359,10 @@ public class EmployeeService {
             stmt.executeUpdate();
 
         } catch (SQLException e) {
-            e.printStackTrace(); // Hoặc log lỗi nếu muốn
+            e.printStackTrace();
         }
     }
+
 
     public boolean updateEmployee(Employee employee) {
         String sql = "UPDATE employees SET first_name=?, last_name=?, email=?, phone=?, citizen_id=?, date_of_birth=?, gender=?, department_id=?, position_id=?, hire_date=?, employment_status=?, emergency_contact_name=?, emergency_contact_phone=?, emergency_contact_relationship=?, notes=? WHERE id=?";

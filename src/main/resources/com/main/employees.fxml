@@ -85,7 +85,7 @@
                 </VBox>
                 <VBox alignment="CENTER" spacing="5">
                     <Label fx:id="lblInactive" text="5" style="-fx-font-size: 24px; -fx-font-weight: bold; -fx-text-fill: #e74c3c;"/>
-                    <Label text="Nghỉ việc" style="-fx-font-size: 12px; -fx-text-fill: #7f8c8d;"/>
+                    <Label text="Đã nghỉ việc" style="-fx-font-size: 12px; -fx-text-fill: #7f8c8d;"/>
                 </VBox>
             </HBox>
         </VBox>
