@@ -18,11 +18,14 @@ public class ContractService {
     public List<Contract> getAllContracts() {
         List<Contract> contracts = new ArrayList<>();
         String sql = """
-            SELECT ec.*, CONCAT(e.first_name, ' ', e.last_name) as employee_name, ct.type_name as contract_type_name
-            FROM employment_contracts ec
-            LEFT JOIN employees e ON ec.employee_id = e.id
-            LEFT JOIN contract_types ct ON ec.contract_type_id = ct.id
-            ORDER BY ec.start_date DESC
+            SELECT ec.*, CONCAT(e.first_name, ' ', e.last_name) as employee_name,
+                      ct.type_name as contract_type_name, u.username as created_by_username
+               FROM employment_contracts ec
+               LEFT JOIN employees e ON ec.employee_id = e.id
+               LEFT JOIN contract_types ct ON ec.contract_type_id = ct.id
+               LEFT JOIN users u ON ec.created_by = u.id
+               WHERE ec.is_deleted = 0
+               ORDER BY ec.start_date DESC
             """;
 
         try (Connection conn = DBUtil.getConnection();
@@ -43,11 +46,13 @@ public class ContractService {
     // Get contract by ID
     public Contract getContractById(int id) {
         String sql = """
-            SELECT ec.*, CONCAT(e.first_name, ' ', e.last_name) as employee_name, ct.type_name as contract_type_name
-            FROM employment_contracts ec
-            LEFT JOIN employees e ON ec.employee_id = e.id
-            LEFT JOIN contract_types ct ON ec.contract_type_id = ct.id
-            WHERE ec.id = ?
+            SELECT ec.*, CONCAT(e.first_name, ' ', e.last_name) as employee_name,
+                      ct.type_name as contract_type_name, u.username as created_by_username
+               FROM employment_contracts ec
+               LEFT JOIN employees e ON ec.employee_id = e.id
+               LEFT JOIN contract_types ct ON ec.contract_type_id = ct.id
+               LEFT JOIN users u ON ec.created_by = u.id
+               WHERE ec.id = ? AND ec.is_deleted = 0
             """;
 
         try (Connection conn = DBUtil.getConnection();
@@ -69,11 +74,13 @@ public class ContractService {
     // Search contracts with filters
     public List<Contract> searchContracts(String searchTerm, String contractType, String status, LocalDate fromDate) {
         StringBuilder sql = new StringBuilder("""
-            SELECT ec.*, CONCAT(e.first_name, ' ', e.last_name) as employee_name, ct.type_name as contract_type_name
-            FROM employment_contracts ec
-            LEFT JOIN employees e ON ec.employee_id = e.id
-            LEFT JOIN contract_types ct ON ec.contract_type_id = ct.id
-            WHERE 1=1
+            SELECT ec.*, CONCAT(e.first_name, ' ', e.last_name) as employee_name,\s
+                       ct.type_name as contract_type_name, u.username as created_by_username
+                FROM employment_contracts ec
+                LEFT JOIN employees e ON ec.employee_id = e.id
+                LEFT JOIN contract_types ct ON ec.contract_type_id = ct.id
+                LEFT JOIN users u ON ec.created_by = u.id
+                WHERE ec.is_deleted = 0
             """);
 
         List<Object> parameters = new ArrayList<>();
@@ -193,7 +200,7 @@ public class ContractService {
 
     // Delete contract
     public boolean deleteContract(int id) {
-        String sql = "DELETE FROM employment_contracts WHERE id = ?";
+        String sql = "UPDATE employment_contracts SET is_deleted = 1 WHERE id = ?";
 
         try (Connection conn = DBUtil.getConnection();
              PreparedStatement stmt = conn.prepareStatement(sql)) {
@@ -210,11 +217,11 @@ public class ContractService {
     public Map<String, Integer> getContractStatistics() {
         Map<String, Integer> stats = new HashMap<>();
         String sql = """
-            SELECT 
-                SUM(CASE WHEN end_date IS NULL OR end_date > CURDATE() THEN 1 ELSE 0 END) as active_contracts,
-                SUM(CASE WHEN end_date IS NOT NULL AND end_date BETWEEN CURDATE() AND DATE_ADD(CURDATE(), INTERVAL 30 DAY) THEN 1 ELSE 0 END) as expiring_soon,
-                SUM(CASE WHEN end_date IS NOT NULL AND end_date < CURDATE() THEN 1 ELSE 0 END) as expired_contracts
-            FROM employment_contracts
+                SELECT
+                     SUM(CASE WHEN (end_date IS NULL OR end_date > CURDATE()) AND is_deleted = 0 THEN 1 ELSE 0 END) as active_contracts,
+                     SUM(CASE WHEN end_date IS NOT NULL AND end_date BETWEEN CURDATE() AND DATE_ADD(CURDATE(), INTERVAL 30 DAY) AND is_deleted = 0 THEN 1 ELSE 0 END) as expiring_soon,
+                     SUM(CASE WHEN end_date IS NOT NULL AND end_date < CURDATE() AND is_deleted = 0 THEN 1 ELSE 0 END) as expired_contracts
+                 FROM employment_contracts
             """;
 
         try (Connection conn = DBUtil.getConnection();
@@ -237,10 +244,12 @@ public class ContractService {
     public Map<String, Integer> getContractTypeStatistics() {
         Map<String, Integer> stats = new HashMap<>();
         String sql = """
-            SELECT ct.type_name, COUNT(ec.id) as count
-            FROM contract_types ct
-            LEFT JOIN employment_contracts ec ON ct.id = ec.contract_type_id AND (ec.end_date IS NULL OR ec.end_date > CURDATE())
-            GROUP BY ct.id, ct.type_name
+                SELECT ct.type_name, COUNT(ec.id) as count
+                FROM contract_types ct
+                LEFT JOIN employment_contracts ec ON ct.id = ec.contract_type_id
+                     AND (ec.end_date IS NULL OR ec.end_date > CURDATE())
+                     AND ec.is_deleted = 0
+                GROUP BY ct.id, ct.type_name
             """;
 
         try (Connection conn = DBUtil.getConnection();
@@ -261,7 +270,7 @@ public class ContractService {
      * Get total number of contracts.
      */
     public int getTotalContractsCount() {
-        String sql = "SELECT COUNT(*) FROM employment_contracts";
+        String sql = "SELECT COUNT(*) FROM employment_contracts WHERE is_deleted = 0";
         try (Connection conn = DBUtil.getConnection();
              PreparedStatement ps = conn.prepareStatement(sql);
              ResultSet rs = ps.executeQuery()) {
@@ -278,12 +287,14 @@ public class ContractService {
     public List<Contract> getContractsByEmployeeId(int employeeId) {
         List<Contract> contracts = new ArrayList<>();
         String sql = """
-            SELECT ec.*, CONCAT(e.first_name, ' ', e.last_name) as employee_name, ct.type_name as contract_type_name
-            FROM employment_contracts ec
-            LEFT JOIN employees e ON ec.employee_id = e.id
-            LEFT JOIN contract_types ct ON ec.contract_type_id = ct.id
-            WHERE ec.employee_id = ?
-            ORDER BY ec.start_date DESC
+                SELECT ec.*, CONCAT(e.first_name, ' ', e.last_name) as employee_name,
+                      ct.type_name as contract_type_name, u.username as created_by_username
+               FROM employment_contracts ec
+               LEFT JOIN employees e ON ec.employee_id = e.id
+               LEFT JOIN contract_types ct ON ec.contract_type_id = ct.id
+               LEFT JOIN users u ON ec.created_by = u.id
+               WHERE ec.employee_id = ? AND ec.is_deleted = 0
+               ORDER BY ec.start_date DESC
             """;
 
         try (Connection conn = DBUtil.getConnection();
@@ -306,7 +317,7 @@ public class ContractService {
     public String generateContractNumber(String contractTypeName) {
         String prefix = getContractPrefix(contractTypeName);
 
-        String sql = "SELECT contract_number FROM employment_contracts WHERE contract_number LIKE ? ORDER BY id DESC LIMIT 1";
+        String sql = "SELECT contract_number FROM employment_contracts WHERE contract_number LIKE ? AND is_deleted = 0 ORDER BY id DESC LIMIT 1";
 
         try (Connection conn = DBUtil.getConnection();
              PreparedStatement stmt = conn.prepareStatement(sql)) {
@@ -390,6 +401,7 @@ public class ContractService {
 
         contract.setNotes(rs.getString("notes"));
         contract.setCreatedBy(rs.getInt("created_by"));
+        contract.setCreatedByUsername(rs.getString("created_by_username"));
 
         return contract;
     }

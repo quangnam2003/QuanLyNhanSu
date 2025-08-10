@@ -59,6 +59,7 @@ public class ContractController implements Initializable {
     @FXML private TableColumn<Contract, LocalDate> endDateColumn;
     @FXML private TableColumn<Contract, BigDecimal> salaryColumn;
     @FXML private TableColumn<Contract, String> statusColumn;
+    @FXML private TableColumn<Contract, String> createdByColumn; // THÊM MỚI: Cột người tạo
     @FXML private TableColumn<Contract, Void> actionColumn;
 
     private ContractService contractService;
@@ -105,6 +106,10 @@ public class ContractController implements Initializable {
         contractTypeColumn.setCellValueFactory(new PropertyValueFactory<>("contractTypeName"));
         startDateColumn.setCellValueFactory(new PropertyValueFactory<>("startDate"));
         endDateColumn.setCellValueFactory(new PropertyValueFactory<>("endDate"));
+
+        // THÊM MỚI: Setup cột người tạo hợp đồng
+        createdByColumn.setCellValueFactory(new PropertyValueFactory<>("createdByUsername"));
+
 
         // Custom cell factory for salary column to format currency
         salaryColumn.setCellValueFactory(new PropertyValueFactory<>("salary"));
@@ -345,6 +350,8 @@ public class ContractController implements Initializable {
         content.append("Mức lương: ").append(contract.getFormattedSalary()).append("\n");
         content.append("Phụ cấp: ").append(contract.getAllowances() != null ? String.format("%,.0f VND", contract.getAllowances()) : "0 VND").append("\n");
         content.append("Trạng thái: ").append(contract.getStatus()).append("\n");
+        // THÊM MỚI: Hiển thị người tạo hợp đồng
+        content.append("Người tạo: ").append(contract.getCreatedByUsername() != null ? contract.getCreatedByUsername() : "Không xác định").append("\n");
         if (contract.getNotes() != null && !contract.getNotes().isEmpty()) {
             content.append("Ghi chú: ").append(contract.getNotes()).append("\n");
         }
@@ -368,7 +375,7 @@ public class ContractController implements Initializable {
         Alert alert = new Alert(Alert.AlertType.CONFIRMATION);
         alert.setTitle("Xác nhận xóa");
         alert.setHeaderText("Xóa hợp đồng");
-        alert.setContentText("Bạn có chắc chắn muốn xóa hợp đồng " + contract.getContractNumber() + "?");
+        alert.setContentText("Bạn có chắc chắn muốn xóa hợp đồng " + contract.getContractNumber() + "? Hợp đồng sẽ không hiển thị trong danh sách nhưng vẫn được lưu trữ.");
 
         alert.showAndWait().ifPresent(response -> {
             if (response == ButtonType.OK) {

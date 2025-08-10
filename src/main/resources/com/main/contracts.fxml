@@ -65,12 +65,14 @@
             <columns>
                 <TableColumn fx:id="indexColumn" text="STT" prefWidth="50"/>
                 <TableColumn text="Mã HĐ" fx:id="contractCodeColumn" prefWidth="80"/>
-                <TableColumn text="Nhân viên" fx:id="employeeNameColumn" prefWidth="180"/>
-                <TableColumn text="Loại hợp đồng" fx:id="contractTypeColumn" prefWidth="150"/>
-                <TableColumn text="Ngày bắt đầu" fx:id="startDateColumn" prefWidth="120"/>
-                <TableColumn text="Ngày kết thúc" fx:id="endDateColumn" prefWidth="120"/>
-                <TableColumn text="Mức lương" fx:id="salaryColumn" prefWidth="120"/>
-                <TableColumn text="Trạng thái" fx:id="statusColumn" prefWidth="100"/>
+                <TableColumn text="Nhân viên" fx:id="employeeNameColumn" prefWidth="150"/>
+                <TableColumn text="Loại hợp đồng" fx:id="contractTypeColumn" prefWidth="130"/>
+                <TableColumn text="Ngày bắt đầu" fx:id="startDateColumn" prefWidth="100"/>
+                <TableColumn text="Ngày kết thúc" fx:id="endDateColumn" prefWidth="110"/>
+                <TableColumn text="Mức lương" fx:id="salaryColumn" prefWidth="100"/>
+                <TableColumn text="Trạng thái" fx:id="statusColumn" prefWidth="90"/>
+                <!-- THÊM MỚI: Cột người tạo hợp đồng -->
+                <TableColumn text="Người tạo" fx:id="createdByColumn" prefWidth="100"/>
                 <TableColumn text="Thao tác" fx:id="actionColumn" prefWidth="120"/>
             </columns>
         </TableView>

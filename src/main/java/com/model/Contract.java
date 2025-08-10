@@ -20,6 +20,9 @@ public class Contract {
     private LocalDate signedDate;
     private String notes;
     private int createdBy;
+    private String createdByUsername; // THÊM MỚI: Tên người tạo hợp đồng
+    private boolean isDeleted; // THÊM MỚI: Trạng thái xóa mềm
+
 
     // Constructors
     public Contract() {}
@@ -46,6 +49,7 @@ public class Contract {
         this.signedDate = signedDate;
         this.notes = notes;
         this.createdBy = createdBy;
+        this.isDeleted = false; // Mặc định không bị xóa
     }
 
     // Getters and Setters
@@ -183,6 +187,24 @@ public class Contract {
 
     public void setCreatedBy(int createdBy) {
         this.createdBy = createdBy;
+    }
+
+    // THÊM MỚI: Getter và Setter cho createdByUsername
+    public String getCreatedByUsername() {
+        return createdByUsername;
+    }
+
+    public void setCreatedByUsername(String createdByUsername) {
+        this.createdByUsername = createdByUsername;
+    }
+
+    // THÊM MỚI: Getter và Setter cho isDeleted
+    public boolean isDeleted() {
+        return isDeleted;
+    }
+
+    public void setDeleted(boolean deleted) {
+        isDeleted = deleted;
     }
 
     // Helper methods
