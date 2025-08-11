@@ -8,16 +8,21 @@ import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
 import javafx.event.ActionEvent;
 import javafx.fxml.FXML;
+import javafx.fxml.FXMLLoader;
 import javafx.fxml.Initializable;
 import javafx.geometry.Pos;
+import javafx.scene.Parent;
+import javafx.scene.Scene;
 import javafx.scene.control.*;
 import javafx.scene.control.cell.PropertyValueFactory;
 import javafx.scene.layout.GridPane;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.VBox;
+import javafx.stage.Stage;
 import javafx.util.Callback;
 import javafx.beans.property.SimpleStringProperty;
 
+import java.io.IOException;
 import java.net.URL;
 import java.util.List;
 import java.util.Map;
@@ -544,49 +549,42 @@ public class OrganizationController implements Initializable {
 
     private void handleViewEmployees(Department department) {
         try {
-            // Lấy danh sách tất cả nhân viên của phòng ban
-            List<Employee> allEmployees = employeeService.searchEmployees(null, department.getId());
-            
-            // Lọc nhân viên Active và On Leave để nhất quán với logic đếm trong bảng
-            List<Employee> employees = allEmployees.stream()
-                    .filter(emp -> "Đang làm việc".equals(emp.getEmploymentStatus()) || "Đã nghỉ việc".equals(emp.getEmploymentStatus()))
-                    .collect(Collectors.toList());
-            
+            // Lấy danh sách nhân viên thuộc phòng ban
+            List<Employee> employees = employeeService.getEmployeesByDepartment(department.getId());
+
             // Debug info
             if (DEBUG) {
                 System.out.println("=== VIEW EMPLOYEES DEBUG ===");
                 System.out.println("Phòng ban: " + department.getDepartmentName());
-                System.out.println("Tổng nhân viên: " + allEmployees.size());
-                System.out.println("Nhân viên Đang làm việc + Đã nghỉ việc: " + employees.size());
-                System.out.println("Số liệu trong bảng: " + department.getEmployeeCount());
+                System.out.println("Số nhân viên: " + employees.size());
             }
-            
-            // Tạo dialog hiển thị danh sách nhân viên
+
+            // Tạo dialog
             Dialog<Void> dialog = new Dialog<>();
             dialog.setTitle("👥 Danh sách nhân viên thuộc phòng ban - " + department.getDepartmentName());
             dialog.setHeaderText(null);
             dialog.setResizable(true);
-            
-            // Tạo TableView cho nhân viên
+
+            // TableView
             TableView<Employee> employeeTable = new TableView<>();
             employeeTable.setStyle("-fx-font-size: 13px;");
-            
-            // Cột Tên
+
+            // Cột họ tên
             TableColumn<Employee, String> nameCol = new TableColumn<>("👤 Họ tên");
-            nameCol.setCellValueFactory(data -> new SimpleStringProperty(
-                data.getValue().getFirstName() + " " + data.getValue().getLastName()));
+            nameCol.setCellValueFactory(data ->
+                    new SimpleStringProperty(data.getValue().getFirstName() + " " + data.getValue().getLastName()));
             nameCol.setPrefWidth(180);
-            
-            // Cột Email  
+
+            // Cột Email
             TableColumn<Employee, String> emailCol = new TableColumn<>("📧 Email");
             emailCol.setCellValueFactory(new PropertyValueFactory<>("email"));
             emailCol.setPrefWidth(200);
-            
+
             // Cột Điện thoại
             TableColumn<Employee, String> phoneCol = new TableColumn<>("📞 Điện thoại");
             phoneCol.setCellValueFactory(new PropertyValueFactory<>("phone"));
             phoneCol.setPrefWidth(130);
-            
+
             // Cột Trạng thái
             TableColumn<Employee, String> statusCol = new TableColumn<>("📊 Trạng thái");
             statusCol.setCellValueFactory(new PropertyValueFactory<>("employmentStatus"));
@@ -611,48 +609,36 @@ public class OrganizationController implements Initializable {
                     }
                 }
             });
-            
+
             employeeTable.getColumns().addAll(nameCol, emailCol, phoneCol, statusCol);
             employeeTable.setItems(FXCollections.observableArrayList(employees));
-            
+
             // Layout
             VBox content = new VBox(15);
             content.setStyle("-fx-padding: 20;");
-            
-            // Hiển thị thông tin chi tiết về số lượng nhân viên
-            int workingCount = employees.size();
-            int totalCount = allEmployees.size();
-            
-            // Đếm riêng từng loại để thông tin chi tiết hơn
-            long activeCount = employees.stream().filter(emp -> "Đang làm việc".equals(emp.getEmploymentStatus())).count();
-            
-            String infoText = "📋 Nhân viên thuộc phòng ban: " + workingCount + 
-                            " (Đang làm việc: " + activeCount +
-                            (totalCount > workingCount ? " | Tổng cộng: " + totalCount + " nhân viên" : "");
-            
-            Label infoLabel = new Label(infoText);
+
+            Label infoLabel = new Label("📋 Tổng số nhân viên: " + employees.size());
             infoLabel.setStyle("-fx-font-size: 14px; -fx-font-weight: bold; -fx-text-fill: #2c3e50;");
-            
+
             content.getChildren().addAll(infoLabel, employeeTable);
-            
-            // Set size
+
             employeeTable.setPrefHeight(400);
             employeeTable.setPrefWidth(650);
-            
+
             dialog.getDialogPane().setContent(content);
             dialog.getDialogPane().getButtonTypes().add(ButtonType.OK);
-            
-            // Styling cho button
             dialog.getDialogPane().lookupButton(ButtonType.OK).setStyle(
-                "-fx-background-color: #3498db; -fx-text-fill: white; -fx-font-weight: bold; -fx-padding: 8 16; -fx-background-radius: 5;"
+                    "-fx-background-color: #3498db; -fx-text-fill: white; -fx-font-weight: bold; -fx-padding: 8 16; -fx-background-radius: 5;"
             );
-            
+
             dialog.showAndWait();
-            
+
         } catch (Exception e) {
             showAlert(Alert.AlertType.ERROR, "Lỗi", "Không thể tải danh sách nhân viên: " + e.getMessage());
+            e.printStackTrace();
         }
     }
+
 
     private void handleDeleteDepartment(Department department) {
         Alert confirmAlert = new Alert(Alert.AlertType.CONFIRMATION);

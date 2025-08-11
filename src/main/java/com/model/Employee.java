@@ -26,6 +26,8 @@ public class Employee {
     private String departmentName; // từ bảng departments
     private String positionName;   // từ bảng positions
 
+    //private String fullName;
+
     // Constructor không tham số
     public Employee() {
     }
@@ -51,6 +53,7 @@ public class Employee {
         this.emergencyContactPhone = emergencyContactPhone;
         this.emergencyContactRelationship = emergencyContactRelationship;
         this.notes = notes;
+        //this.fullName = this.firstName + this.lastName;
     }
 
     public int getId() {
@@ -80,6 +83,15 @@ public class Employee {
     public String getFullName() {
         return firstName + " " + lastName;
     }
+
+
+//    public String getFullName() {
+//        return fullName;
+//    }
+//
+//    public void setFullName(String fullName) {
+//        this.fullName = fullName;
+//    }
 
     public String getEmail() {
         return email;

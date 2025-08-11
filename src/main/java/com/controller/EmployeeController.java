@@ -265,4 +265,11 @@ public class EmployeeController implements Initializable {
         alert.setContentText(message);
         alert.showAndWait();
     }
+
+    public void loadEmployeesByDepartment(int departmentId) {
+        List<Employee> employees = employeeService.getEmployeesByDepartment(departmentId);
+        ObservableList<Employee> employeeList = FXCollections.observableArrayList(employees);
+        employeeTable.setItems(employeeList);
+    }
+
 }

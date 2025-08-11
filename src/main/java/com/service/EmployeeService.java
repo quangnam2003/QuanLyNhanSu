@@ -430,5 +430,29 @@ public class EmployeeService {
         return false;
     }
 
+    public List<Employee> getEmployeesByDepartment(int departmentId) {
+        List<Employee> employees = new ArrayList<>();
+        String sql = "SELECT * FROM employees WHERE department_id = ? AND is_deleted = 0";
+        try (Connection conn = DBUtil.getConnection();
+             PreparedStatement stmt = conn.prepareStatement(sql)) {
+            stmt.setInt(1, departmentId);
+            ResultSet rs = stmt.executeQuery();
+            while (rs.next()) {
+                Employee emp = new Employee();
+                emp.setId(rs.getInt("id"));
+                emp.setFirstName(rs.getString("first_name"));
+                emp.setLastName(rs.getString("last_name"));
+                emp.setEmail(rs.getString("email"));
+                emp.setPhone(rs.getString("phone"));
+                emp.setGender(rs.getString("gender"));
+                emp.setEmploymentStatus(rs.getString("employment_status"));
+                employees.add(emp);
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+        return employees;
+    }
+
 
 }
