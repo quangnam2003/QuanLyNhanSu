@@ -40,8 +40,6 @@ public class EmployeeService {
                 }
 
                 employee.setGender(rs.getString("gender"));
-                employee.setAddress(rs.getString("address"));
-                employee.setAvatarUrl(rs.getString("avatar_url"));
                 employee.setDepartmentId(rs.getInt("department_id"));
                 employee.setPositionId(rs.getInt("position_id"));
                 employee.setRoleId(rs.getInt("role_id"));
@@ -133,72 +131,63 @@ public class EmployeeService {
     }
 
 
-    public List<Employee> searchEmployees(String keyword, Integer departmentId, Integer positionId) {
+    public List<Employee> searchEmployees(String keyword, Integer departmentId) {
         List<Employee> list = new ArrayList<>();
-        StringBuilder sql = new StringBuilder("SELECT * FROM employees WHERE is_deleted = 0");
 
-        if (keyword != null && !keyword.isEmpty()) {
-            sql.append(" AND (full_name LIKE ? OR email LIKE ?)");
-        }
+        String sql = """
+        SELECT e.*, d.department_name, p.position_name
+        FROM employees e
+        LEFT JOIN departments d ON e.department_id = d.id
+        LEFT JOIN positions p ON e.position_id = p.id
+        WHERE e.is_deleted = 0
+          AND (e.id LIKE ?
+               OR e.first_name LIKE ?
+               OR e.last_name LIKE ?
+               OR CONCAT(e.first_name, ' ', e.last_name) LIKE ?
+               OR e.phone LIKE ?
+               OR e.email LIKE ?)
+    """;
+
         if (departmentId != null) {
-            sql.append(" AND department_id = ?");
-        }
-        if (positionId != null) {
-            sql.append(" AND position_id = ?");
+            sql += " AND e.department_id = ?";
         }
 
         try (Connection conn = DBUtil.getConnection();
-             PreparedStatement ps = conn.prepareStatement(sql.toString())) {
+             PreparedStatement ps = conn.prepareStatement(sql)) {
 
-            int index = 1;
+            String like = "%" + keyword + "%";
+            ps.setString(1, like);
+            ps.setString(2, like);
+            ps.setString(3, like);
+            ps.setString(4, like);
+            ps.setString(5, like);
+            ps.setString(6, like);
 
-            if (keyword != null && !keyword.isEmpty()) {
-                ps.setString(index++, "%" + keyword + "%");
-                ps.setString(index++, "%" + keyword + "%");
-            }
             if (departmentId != null) {
-                ps.setInt(index++, departmentId);
-            }
-            if (positionId != null) {
-                ps.setInt(index++, positionId);
+                ps.setInt(7, departmentId);
             }
 
-            try (ResultSet rs = ps.executeQuery()) {
-                while (rs.next()) {
-                    Employee emp = new Employee();
-                    emp.setId(rs.getInt("id"));
-                    emp.setFirstName(rs.getString("first_name"));
-                    emp.setLastName(rs.getString("last_name"));
-                    emp.setEmail(rs.getString("email"));
-                    emp.setPhone(rs.getString("phone"));
-                    emp.setCitizenId(rs.getString("citizen_id"));
-                    emp.setDateOfBirth(rs.getDate("date_of_birth") != null ?
-                            rs.getDate("date_of_birth").toLocalDate() : null);
-                    emp.setGender(rs.getString("gender"));
-                    emp.setAddress(rs.getString("address"));
-                    emp.setAvatarUrl(rs.getString("avatar_url"));
-                    emp.setDepartmentId(rs.getInt("department_id"));
-                    emp.setPositionId(rs.getInt("position_id"));
-                    emp.setRoleId(rs.getInt("role_id"));
-                    emp.setManagerId(rs.getInt("manager_id"));
-                    emp.setHireDate(rs.getDate("hire_date") != null ?
-                            rs.getDate("hire_date").toLocalDate() : null);
-                    emp.setEmploymentStatus(rs.getString("employment_status"));
-                    emp.setEmergencyContactName(rs.getString("emergency_contact_name"));
-                    emp.setEmergencyContactPhone(rs.getString("emergency_contact_phone"));
-                    emp.setEmergencyContactRelationship(rs.getString("emergency_contact_relationship"));
-                    emp.setNotes(rs.getString("notes"));
-
-                    list.add(emp);
-                }
+            ResultSet rs = ps.executeQuery();
+            while (rs.next()) {
+                Employee employee = new Employee();
+                employee.setId(rs.getInt("id"));
+                employee.setFirstName(rs.getString("first_name"));
+                employee.setLastName(rs.getString("last_name"));
+                employee.setEmail(rs.getString("email"));
+                employee.setPhone(rs.getString("phone"));
+                employee.setGender(rs.getString("gender"));
+                employee.setEmploymentStatus(rs.getString("employment_status"));
+                employee.setHireDate(rs.getDate("hire_date") != null ? rs.getDate("hire_date").toLocalDate() : null);
+                employee.setDepartmentName(rs.getString("department_name"));
+                employee.setPositionName(rs.getString("position_name"));
+                list.add(employee);
             }
-
         } catch (SQLException e) {
             e.printStackTrace();
         }
-
         return list;
     }
+
 
     public List<Employee> searchEmployee(String keyword) {
         List<Employee> list = new ArrayList<>();
@@ -315,7 +304,7 @@ public class EmployeeService {
             emergency_contact_name, emergency_contact_phone,
             emergency_contact_relationship, department_id, position_id
         )
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     """;
 
         try (Connection conn = DBUtil.getConnection();
@@ -330,11 +319,11 @@ public class EmployeeService {
             ps.setString(7, emp.getGender());
             ps.setDate(8, java.sql.Date.valueOf(emp.getHireDate()));
             ps.setString(9, emp.getEmploymentStatus());
-            ps.setString(11, emp.getEmergencyContactName());
-            ps.setString(12, emp.getEmergencyContactPhone());
-            ps.setString(13, emp.getEmergencyContactRelationship());
-            ps.setInt(14, emp.getDepartmentId()); // ✅ dùng id truyền từ controller
-            ps.setInt(15, emp.getPositionId());   // ✅ dùng id truyền từ controller
+            ps.setString(10, emp.getEmergencyContactName());
+            ps.setString(11, emp.getEmergencyContactPhone());
+            ps.setString(12, emp.getEmergencyContactRelationship());
+            ps.setInt(13, emp.getDepartmentId()); // ✅ dùng id truyền từ controller
+            ps.setInt(14, emp.getPositionId());   // ✅ dùng id truyền từ controller
 
             int rows = ps.executeUpdate();
             return rows > 0;

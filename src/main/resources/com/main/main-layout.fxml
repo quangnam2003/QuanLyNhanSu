@@ -3,6 +3,7 @@
 <?import javafx.scene.image.ImageView?>
 <?import javafx.scene.control.*?>
 <?import javafx.scene.layout.*?>
+<?import javafx.geometry.Insets?>
 
 <BorderPane xmlns="http://javafx.com/javafx"
             xmlns:fx="http://javafx.com/fxml"
@@ -20,28 +21,35 @@
 
             <!-- Logo + Slogan -->
             <VBox alignment="CENTER" spacing="5" styleClass="logo-section">
-                <Label text="HR SYSTEM"
-                       styleClass="logo-title" />
-                <Label text="Quản lý nhân sự hiện đại"
-                       styleClass="logo-subtitle" />
+                <Label text="HR SYSTEM" styleClass="logo-title" />
+                <Label text="Quản lý nhân sự hiện đại" styleClass="logo-subtitle" />
             </VBox>
 
             <!-- Menu -->
-            <Button fx:id="dashboardBtn" text="Dashboard" onAction="#handleMenu" styleClass="nav-button,active"/>
-            <Button fx:id="employeeBtn" text="Nhân viên" onAction="#handleMenu" styleClass="nav-button"/>
-            <Button fx:id="organizationBtn" text="Tổ chức" onAction="#handleMenu" styleClass="nav-button"/>
-            <Button fx:id="contractBtn" text="Hợp đồng" onAction="#handleMenu" styleClass="nav-button"/>
-            <Button fx:id="reportBtn" text="Tài Liệu" onAction="#handleMenu" styleClass="nav-button"/>
-            <Button fx:id="settingsBtn" text="Quản Lý" onAction="#handleMenu" styleClass="nav-button"/>
-            <Button fx:id="btnLogout"
-                    text="Đăng xuất"
-                    onAction="#handleLogout"
-                    layoutX="100"
-                    layoutY="1000"
-                    prefWidth="100"
-                    style="-fx-background-color: #d9534f; -fx-text-fill: white;" />
+            <VBox spacing="0" alignment="TOP_CENTER" VBox.vgrow="ALWAYS">
+                <Button fx:id="dashboardBtn" text="Dashboard" onAction="#handleMenu" styleClass="nav-button,active"/>
+                <Button fx:id="employeeBtn" text="Nhân viên" onAction="#handleMenu" styleClass="nav-button"/>
+                <Button fx:id="organizationBtn" text="Tổ chức" onAction="#handleMenu" styleClass="nav-button"/>
+                <Button fx:id="contractBtn" text="Hợp đồng" onAction="#handleMenu" styleClass="nav-button"/>
+                <Button fx:id="reportBtn" text="Tài Liệu" onAction="#handleMenu" styleClass="nav-button"/>
+                <Button fx:id="settingsBtn" text="Quản Lý" onAction="#handleMenu" styleClass="nav-button"/>
+            </VBox>
 
+            <!-- Logout Button (đẹp + cách nút trên) -->
+            <VBox alignment="CENTER">
+                <padding>
+                    <Insets top="15" right="15" bottom="15" left="15"/>
+                </padding>
 
+                <Button id="btnLogout"
+                        fx:id="btnLogout"
+                        text="Đăng xuất"
+                        onAction="#handleLogout"
+                        prefWidth="160"
+                        style="-fx-background-color: #d9534f;
+                       -fx-text-fill: white;
+                       -fx-background-radius: 8;" />
+            </VBox>
         </VBox>
     </left>
 

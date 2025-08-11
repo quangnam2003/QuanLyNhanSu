@@ -545,11 +545,11 @@ public class OrganizationController implements Initializable {
     private void handleViewEmployees(Department department) {
         try {
             // Lấy danh sách tất cả nhân viên của phòng ban
-            List<Employee> allEmployees = employeeService.searchEmployees(null, department.getId(), null);
+            List<Employee> allEmployees = employeeService.searchEmployees(null, department.getId());
             
             // Lọc nhân viên Active và On Leave để nhất quán với logic đếm trong bảng
             List<Employee> employees = allEmployees.stream()
-                    .filter(emp -> "Active".equals(emp.getEmploymentStatus()) || "On Leave".equals(emp.getEmploymentStatus()))
+                    .filter(emp -> "Đang làm việc".equals(emp.getEmploymentStatus()) || "Đã nghỉ việc".equals(emp.getEmploymentStatus()))
                     .collect(Collectors.toList());
             
             // Debug info
@@ -557,7 +557,7 @@ public class OrganizationController implements Initializable {
                 System.out.println("=== VIEW EMPLOYEES DEBUG ===");
                 System.out.println("Phòng ban: " + department.getDepartmentName());
                 System.out.println("Tổng nhân viên: " + allEmployees.size());
-                System.out.println("Nhân viên Active + On Leave: " + employees.size());
+                System.out.println("Nhân viên Đang làm việc + Đã nghỉ việc: " + employees.size());
                 System.out.println("Số liệu trong bảng: " + department.getEmployeeCount());
             }
             
@@ -600,7 +600,7 @@ public class OrganizationController implements Initializable {
                         setGraphic(null);
                     } else {
                         Label statusLabel = new Label(item);
-                        if ("Active".equals(item)) {
+                        if ("Đang làm việc".equals(item)) {
                             statusLabel.setStyle("-fx-background-color: #27ae60; -fx-text-fill: white; -fx-padding: 4 8; -fx-background-radius: 12; -fx-font-size: 11px;");
                         } else {
                             statusLabel.setStyle("-fx-background-color: #e74c3c; -fx-text-fill: white; -fx-padding: 4 8; -fx-background-radius: 12; -fx-font-size: 11px;");
@@ -624,7 +624,7 @@ public class OrganizationController implements Initializable {
             int totalCount = allEmployees.size();
             
             // Đếm riêng từng loại để thông tin chi tiết hơn
-            long activeCount = employees.stream().filter(emp -> "Active".equals(emp.getEmploymentStatus())).count();
+            long activeCount = employees.stream().filter(emp -> "Đang làm việc".equals(emp.getEmploymentStatus())).count();
             
             String infoText = "📋 Nhân viên thuộc phòng ban: " + workingCount + 
                             " (Đang làm việc: " + activeCount +
@@ -715,7 +715,7 @@ public class OrganizationController implements Initializable {
             
             // Chỉ thêm nhân viên Active và On Leave với role_id = 6
             allEmployees.stream()
-                .filter(emp -> ("Active".equals(emp.getEmploymentStatus()) || "On Leave".equals(emp.getEmploymentStatus())) 
+                .filter(emp -> ("Đang làm việc".equals(emp.getEmploymentStatus()) || "Đã nghỉ việc".equals(emp.getEmploymentStatus()))
                             && emp.getRoleId() == 6)
                 .forEach(employeeList::add);
             
@@ -784,7 +784,7 @@ public class OrganizationController implements Initializable {
         addressField.setTooltip(new Tooltip("Địa chỉ phòng ban (Bắt buộc):\n• Vị trí văn phòng phòng ban\n• VD: Tầng 2, Tòa nhà A"));
         phoneField.setTooltip(new Tooltip("Số điện thoại (Bắt buộc):\n• Di động: 09x, 08x, 07x, 03x, 05x\n• Cố định: 02x + 7-8 số\n• Có thể có +84 hoặc 84"));
         emailField.setTooltip(new Tooltip("Email phòng ban (Bắt buộc):\n• Có chứa @ và domain\n• VD: hr@company.com"));
-        managerComboBox.setTooltip(new Tooltip("Trưởng phòng (Tùy chọn):\n• Có thể để trống nếu chưa có\n• Chỉ hiển thị nhân viên Active/On Leave\n• Có thể thay đổi sau"));
+        managerComboBox.setTooltip(new Tooltip("Trưởng phòng (Tùy chọn):\n• Có thể để trống nếu chưa có\n• Chỉ hiển thị nhân viên Đang làm việc/Đã nghỉ việc\n• Có thể thay đổi sau"));
 
         // Điền dữ liệu nếu đang edit
         if (existingDept != null) {

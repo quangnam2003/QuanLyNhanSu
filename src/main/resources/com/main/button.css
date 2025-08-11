@@ -13,3 +13,16 @@
 .button-cancel:hover {
     -fx-background-color: #e74c3c; /* đỏ sáng hơn khi hover */
 }
+
+#btnLogout {
+    -fx-background-color: #d9534f;
+    -fx-text-fill: white;
+    -fx-background-radius: 8;
+    -fx-cursor: hand;
+}
+#btnLogout:hover {
+    -fx-background-color: #c9302c;
+}
+#btnLogout:pressed {
+    -fx-background-color: #a8231f;
+}

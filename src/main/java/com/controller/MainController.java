@@ -50,6 +50,7 @@ public class MainController {
         // Load CSS
         contentArea.getStylesheets().add(getClass().getResource("/com/main/sidebar.css").toExternalForm());
         sidebar.getStylesheets().add(getClass().getResource("/com/main/sidebar.css").toExternalForm());
+        sidebar.getStylesheets().add(getClass().getResource("/com/main/button.css").toExternalForm());
 
         // Thiết lập tooltip phân quyền cho các button
         setupPermissionTooltips();

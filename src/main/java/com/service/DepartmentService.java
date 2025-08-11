@@ -41,7 +41,7 @@ public class DepartmentService {
         String sql = """
             SELECT d.*, 
                    CONCAT(e.first_name, ' ', e.last_name) as manager_name,
-                   (SELECT COUNT(*) FROM employees emp WHERE emp.department_id = d.id AND emp.employment_status IN ('Active', 'On Leave')) as employee_count
+                   (SELECT COUNT(*) FROM employees emp WHERE emp.department_id = d.id AND emp.employment_status IN ('Đang làm việc', 'Đã nghỉ việc')) as employee_count
             FROM departments d 
             LEFT JOIN employees e ON d.manager_id = e.id 
             ORDER BY d.department_code
@@ -223,7 +223,7 @@ public class DepartmentService {
         String sql = """
             SELECT d.department_name, COUNT(e.id) as employee_count 
             FROM departments d 
-            LEFT JOIN employees e ON d.id = e.department_id AND e.employment_status IN ('Active', 'On Leave')
+            LEFT JOIN employees e ON d.id = e.department_id AND e.employment_status IN ('Đang làm việc', 'Đã nghỉ việc')
             GROUP BY d.id, d.department_name 
             ORDER BY d.department_name
         """;
@@ -332,7 +332,7 @@ public class DepartmentService {
             String deptSql = """
                 SELECT d.department_name, d.id as dept_id, 
                        COUNT(e.id) as total_employees,
-                       COUNT(CASE WHEN e.employment_status = 'Active' THEN 1 END) as active_employees
+                       COUNT(CASE WHEN e.employment_status = 'Đang làm việc' THEN 1 END) as active_employees
                 FROM departments d 
                 LEFT JOIN employees e ON d.id = e.department_id
                 GROUP BY d.id, d.department_name 

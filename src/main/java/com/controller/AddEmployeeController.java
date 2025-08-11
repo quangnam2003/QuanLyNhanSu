@@ -45,7 +45,7 @@ public class AddEmployeeController {
         cbDepartment.setItems(FXCollections.observableArrayList(departmentService.getAllDepartments()));
         cbPosition.setItems(FXCollections.observableArrayList(positionService.getAllPositions()));
 
-        // 👉 Kiểm tra nếu đang ở chế độ sửa
+        //Kiểm tra nếu đang ở chế độ sửa
         if (editingEmployee != null) {
             cbDepartment.setValue(departmentService.getDepartmentById(editingEmployee.getDepartmentId()));
             cbPosition.setValue(positionService.getPositionById(editingEmployee.getPositionId()));
@@ -82,8 +82,6 @@ public class AddEmployeeController {
             emp.setEmergencyContactName(txtEmergencyName.getText().trim());
             emp.setEmergencyContactPhone(txtEmergencyPhone.getText().trim());
             emp.setEmergencyContactRelationship(txtEmergencyRelation.getText().trim());
-
-            // sửa chỗ này: lấy id thay vì tên
             emp.setDepartmentId(cbDepartment.getValue().getId());
             emp.setPositionId(cbPosition.getValue().getId());
 
@@ -211,8 +209,4 @@ public class AddEmployeeController {
         txtEmergencyPhone.setText(editingEmployee.getEmergencyContactPhone());
         txtEmergencyRelation.setText(editingEmployee.getEmergencyContactRelationship());
     }
-
-
-
-
 }
