@@ -394,4 +394,133 @@ public class EmployeeService {
         }
         return employees;
     }
+
+    /**
+     * Lấy danh sách nhân viên trong phòng ban có thể làm trưởng phòng
+     * Lấy tất cả nhân viên đang làm việc trong phòng ban đó
+     */
+    public List<Employee> getEmployeesByDepartmentForManager(int departmentId) {
+        List<Employee> employees = new ArrayList<>();
+        String sql = """
+            SELECT e.*, d.department_name, p.position_name
+            FROM employees e
+            LEFT JOIN departments d ON e.department_id = d.id
+            LEFT JOIN positions p ON e.position_id = p.id
+            WHERE e.department_id = ? 
+              AND e.is_deleted = 0 
+              AND e.employment_status = 'Đang làm việc'
+            ORDER BY e.first_name, e.last_name
+        """;
+        
+        try (Connection conn = DBUtil.getConnection();
+             PreparedStatement stmt = conn.prepareStatement(sql)) {
+            stmt.setInt(1, departmentId);
+            ResultSet rs = stmt.executeQuery();
+            
+            while (rs.next()) {
+                Employee emp = new Employee();
+                emp.setId(rs.getInt("id"));
+                emp.setFirstName(rs.getString("first_name"));
+                emp.setLastName(rs.getString("last_name"));
+                emp.setEmail(rs.getString("email"));
+                emp.setPhone(rs.getString("phone"));
+                emp.setGender(rs.getString("gender"));
+                emp.setEmploymentStatus(rs.getString("employment_status"));
+                emp.setDepartmentId(rs.getInt("department_id"));
+                emp.setPositionId(rs.getInt("position_id"));
+                emp.setRoleId(rs.getInt("role_id"));
+                emp.setDepartmentName(rs.getString("department_name"));
+                emp.setPositionName(rs.getString("position_name"));
+                
+                Date dobSql = rs.getDate("date_of_birth");
+                if (dobSql != null) {
+                    emp.setDateOfBirth(dobSql.toLocalDate());
+                }
+                
+                Date hireDateSql = rs.getDate("hire_date");
+                if (hireDateSql != null) {
+                    emp.setHireDate(hireDateSql.toLocalDate());
+                }
+                
+                employees.add(emp);
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+        return employees;
+    }
+
+    /**
+     * Lấy danh sách nhân viên KHÔNG thuộc phòng ban cụ thể
+     * Để có thể thêm vào phòng ban đó
+     */
+    public List<Employee> getEmployeesNotInDepartment(int departmentId) {
+        List<Employee> employees = new ArrayList<>();
+        String sql = """
+            SELECT e.*, d.department_name, p.position_name
+            FROM employees e
+            LEFT JOIN departments d ON e.department_id = d.id
+            LEFT JOIN positions p ON e.position_id = p.id
+            WHERE e.is_deleted = 0 
+              AND e.employment_status = 'Đang làm việc'
+              AND (e.department_id IS NULL OR e.department_id != ?)
+            ORDER BY e.first_name, e.last_name
+        """;
+        
+        try (Connection conn = DBUtil.getConnection();
+             PreparedStatement stmt = conn.prepareStatement(sql)) {
+            stmt.setInt(1, departmentId);
+            ResultSet rs = stmt.executeQuery();
+            
+            while (rs.next()) {
+                Employee emp = new Employee();
+                emp.setId(rs.getInt("id"));
+                emp.setFirstName(rs.getString("first_name"));
+                emp.setLastName(rs.getString("last_name"));
+                emp.setEmail(rs.getString("email"));
+                emp.setPhone(rs.getString("phone"));
+                emp.setGender(rs.getString("gender"));
+                emp.setEmploymentStatus(rs.getString("employment_status"));
+                emp.setDepartmentId(rs.getInt("department_id"));
+                emp.setPositionId(rs.getInt("position_id"));
+                emp.setRoleId(rs.getInt("role_id"));
+                emp.setDepartmentName(rs.getString("department_name"));
+                emp.setPositionName(rs.getString("position_name"));
+                
+                Date dobSql = rs.getDate("date_of_birth");
+                if (dobSql != null) {
+                    emp.setDateOfBirth(dobSql.toLocalDate());
+                }
+                
+                Date hireDateSql = rs.getDate("hire_date");
+                if (hireDateSql != null) {
+                    emp.setHireDate(hireDateSql.toLocalDate());
+                }
+                
+                employees.add(emp);
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+        return employees;
+    }
+
+    /**
+     * Cập nhật phòng ban cho nhân viên
+     */
+    public boolean updateEmployeeDepartment(int employeeId, int newDepartmentId) {
+        String sql = "UPDATE employees SET department_id = ? WHERE id = ? AND is_deleted = 0";
+        
+        try (Connection conn = DBUtil.getConnection();
+             PreparedStatement stmt = conn.prepareStatement(sql)) {
+            stmt.setInt(1, newDepartmentId);
+            stmt.setInt(2, employeeId);
+            
+            int affected = stmt.executeUpdate();
+            return affected > 0;
+        } catch (SQLException e) {
+            e.printStackTrace();
+            return false;
+        }
+    }
 }

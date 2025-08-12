@@ -8,27 +8,23 @@ import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
 import javafx.event.ActionEvent;
 import javafx.fxml.FXML;
-import javafx.fxml.FXMLLoader;
 import javafx.fxml.Initializable;
 import javafx.geometry.Pos;
-import javafx.scene.Parent;
-import javafx.scene.Scene;
 import javafx.scene.control.*;
 import javafx.scene.control.cell.PropertyValueFactory;
 import javafx.scene.layout.GridPane;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.VBox;
-import javafx.stage.Stage;
+import javafx.scene.layout.Region;
 import javafx.util.Callback;
 import javafx.beans.property.SimpleStringProperty;
 
-import java.io.IOException;
 import java.net.URL;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.ResourceBundle;
-import java.util.stream.Collectors;
 
 public class OrganizationController implements Initializable {
 
@@ -294,7 +290,7 @@ public class OrganizationController implements Initializable {
 
     private void updateDebugInfo(int departmentCount, int totalEmployees) {
         if (lblDebugInfo != null) {
-            lblDebugInfo.setText("👥 " + totalEmployees + " nhân viên trong " + departmentCount + " phòng ban");
+            lblDebugInfo.setText("👥 " + totalEmployees + " nhân viên");
         }
     }
 
@@ -632,17 +628,40 @@ public class OrganizationController implements Initializable {
                 }
             });
 
-            employeeTable.getColumns().addAll(nameCol, emailCol, phoneCol, statusCol);
+            employeeTable.getColumns().add(nameCol);
+            employeeTable.getColumns().add(emailCol);
+            employeeTable.getColumns().add(phoneCol);
+            employeeTable.getColumns().add(statusCol);
             employeeTable.setItems(FXCollections.observableArrayList(employees));
 
             // Layout
             VBox content = new VBox(15);
             content.setStyle("-fx-padding: 20;");
 
+            // Header với thông tin và button thêm nhân viên
+            HBox headerBox = new HBox(15);
+            headerBox.setAlignment(Pos.CENTER_LEFT);
+            
             Label infoLabel = new Label("📋 Tổng số nhân viên: " + employees.size());
             infoLabel.setStyle("-fx-font-size: 14px; -fx-font-weight: bold; -fx-text-fill: #2c3e50;");
-
-            content.getChildren().addAll(infoLabel, employeeTable);
+            
+            // Spacer để đẩy button sang phải
+            Region spacer = new Region();
+            HBox.setHgrow(spacer, javafx.scene.layout.Priority.ALWAYS);
+            
+            // Button thêm nhân viên
+            Button btnAddEmployee = new Button("➕ Thêm nhân viên");
+            btnAddEmployee.setStyle("-fx-background-color: #27ae60; -fx-text-fill: white; -fx-padding: 8 16; -fx-background-radius: 5; -fx-font-size: 12px; -fx-font-weight: bold; -fx-cursor: hand;");
+            btnAddEmployee.setOnMouseEntered(e -> btnAddEmployee.setStyle("-fx-background-color: #229954; -fx-text-fill: white; -fx-padding: 8 16; -fx-background-radius: 5; -fx-font-size: 12px; -fx-font-weight: bold; -fx-cursor: hand;"));
+            btnAddEmployee.setOnMouseExited(e -> btnAddEmployee.setStyle("-fx-background-color: #27ae60; -fx-text-fill: white; -fx-padding: 8 16; -fx-background-radius: 5; -fx-font-size: 12px; -fx-font-weight: bold; -fx-cursor: hand;"));
+            
+            // Xử lý click button thêm nhân viên
+            btnAddEmployee.setOnAction(e -> {
+                handleAddEmployeeToDepartment(department, dialog, employeeTable);
+            });
+            
+            headerBox.getChildren().addAll(infoLabel, spacer, btnAddEmployee);
+            content.getChildren().addAll(headerBox, employeeTable);
 
             employeeTable.setPrefHeight(400);
             employeeTable.setPrefWidth(650);
@@ -694,6 +713,7 @@ public class OrganizationController implements Initializable {
         TextField addressField = new TextField();
         TextField phoneField = new TextField();
         TextField emailField = new TextField();
+        ComboBox<Department> departmentFilterComboBox = new ComboBox<>();
         ComboBox<Employee> managerComboBox = new ComboBox<>();
 
         // Styling cho text fields và ComboBox
@@ -704,30 +724,70 @@ public class OrganizationController implements Initializable {
         addressField.setStyle(fieldStyle);
         phoneField.setStyle(fieldStyle);
         emailField.setStyle(fieldStyle);
+        departmentFilterComboBox.setStyle(fieldStyle);
         managerComboBox.setStyle(fieldStyle);
         
-        // Load danh sách nhân viên cho ComboBox trưởng phòng
+        // Load danh sách phòng ban cho ComboBox filter
         try {
-            EmployeeService employeeService = new EmployeeService();
-            List<Employee> allEmployees = employeeService.getAllEmployees();
+            // Load tất cả phòng ban
+            List<Department> allDepartments = departmentService.getAllDepartmentsWithDetails();
+            ObservableList<Department> departmentList = FXCollections.observableArrayList();
             
-            // Tạo ObservableList và thêm option "Không có"
-            ObservableList<Employee> employeeList = FXCollections.observableArrayList();
+            // Thêm option "Chọn phòng ban để lọc trưởng phòng"
+            Department allDeptOption = new Department();
+            allDeptOption.setId(0);
+            allDeptOption.setDepartmentName("Chọn phòng ban để lọc nhân viên");
+            departmentList.add(allDeptOption);
             
-            // Thêm option "Không có trưởng phòng"
+            departmentList.addAll(allDepartments);
+            departmentFilterComboBox.setItems(departmentList);
+            
+            // Custom cell factory cho department filter
+            departmentFilterComboBox.setCellFactory(new Callback<ListView<Department>, ListCell<Department>>() {
+                @Override
+                public ListCell<Department> call(ListView<Department> param) {
+                    return new ListCell<Department>() {
+                        @Override
+                        protected void updateItem(Department item, boolean empty) {
+                            super.updateItem(item, empty);
+                            if (empty || item == null) {
+                                setText(null);
+                            } else {
+                                if (item.getId() == 0) {
+                                    setText("🔍 " + item.getDepartmentName());
+                                } else {
+                                    setText("🏢 " + item.getDepartmentName() + " (" + item.getDepartmentCode() + ")");
+                                }
+                            }
+                        }
+                    };
+                }
+            });
+            
+            departmentFilterComboBox.setButtonCell(new ListCell<Department>() {
+                @Override
+                protected void updateItem(Department item, boolean empty) {
+                    super.updateItem(item, empty);
+                    if (empty || item == null) {
+                        setText("Chọn phòng ban để lọc...");
+                    } else {
+                        if (item.getId() == 0) {
+                            setText("🔍 " + item.getDepartmentName());
+                        } else {
+                            setText("🏢 " + item.getDepartmentName());
+                        }
+                    }
+                }
+            });
+            
+            // Khởi tạo manager combobox với option "Không có"
+            ObservableList<Employee> initialEmployeeList = FXCollections.observableArrayList();
             Employee noManager = new Employee();
             noManager.setId(0);
             noManager.setFirstName("Không có");
             noManager.setLastName("trưởng phòng");
-            employeeList.add(noManager);
-            
-            // Chỉ thêm nhân viên Active và On Leave với role_id = 6
-            allEmployees.stream()
-                .filter(emp -> ("Đang làm việc".equals(emp.getEmploymentStatus()) || "Đã nghỉ việc".equals(emp.getEmploymentStatus()))
-                            && emp.getRoleId() == 6)
-                .forEach(employeeList::add);
-            
-            managerComboBox.setItems(employeeList);
+            initialEmployeeList.add(noManager);
+            managerComboBox.setItems(initialEmployeeList);
             
             // Custom cell factory để hiển thị tên đầy đủ
             managerComboBox.setCellFactory(new Callback<ListView<Employee>, ListCell<Employee>>() {
@@ -771,8 +831,16 @@ public class OrganizationController implements Initializable {
             // Mặc định chọn "Không có trưởng phòng"
             managerComboBox.getSelectionModel().selectFirst();
             
+            // Listener cho department filter để cập nhật manager combobox
+            departmentFilterComboBox.valueProperty().addListener((obs, oldDept, newDept) -> {
+                updateManagerComboBox(newDept, managerComboBox);
+            });
+            
+            // Mặc định chọn option đầu tiên (Chọn phòng ban...)
+            departmentFilterComboBox.getSelectionModel().selectFirst();
+            
         } catch (Exception e) {
-            System.err.println("Lỗi load danh sách nhân viên: " + e.getMessage());
+            System.err.println("Lỗi load danh sách phòng ban và nhân viên: " + e.getMessage());
             e.printStackTrace();
         }
 
@@ -783,6 +851,7 @@ public class OrganizationController implements Initializable {
         addressField.setPromptText("Địa chỉ phòng ban (Bắt buộc)");
         phoneField.setPromptText("VD: 0912345678, 024.1234567 (Bắt buộc)");
         emailField.setPromptText("VD: hr@company.com (Bắt buộc)");
+        departmentFilterComboBox.setPromptText("Chọn phòng ban để lọc...");
         managerComboBox.setPromptText("Chọn trưởng phòng (Tùy chọn)");
         
         // Add tooltips with validation info (TẤT CẢ TRƯỜNG BẮT BUỘC)
@@ -792,7 +861,8 @@ public class OrganizationController implements Initializable {
         addressField.setTooltip(new Tooltip("Địa chỉ phòng ban (Bắt buộc):\n• Vị trí văn phòng phòng ban\n• VD: Tầng 2, Tòa nhà A"));
         phoneField.setTooltip(new Tooltip("Số điện thoại (Bắt buộc):\n• Di động: 09x, 08x, 07x, 03x, 05x\n• Cố định: 02x + 7-8 số\n• Có thể có +84 hoặc 84"));
         emailField.setTooltip(new Tooltip("Email phòng ban (Bắt buộc):\n• Có chứa @ và domain\n• VD: hr@company.com"));
-        managerComboBox.setTooltip(new Tooltip("Trưởng phòng (Tùy chọn):\n• Có thể để trống nếu chưa có\n• Chỉ hiển thị nhân viên Đang làm việc/Đã nghỉ việc\n• Có thể thay đổi sau"));
+        departmentFilterComboBox.setTooltip(new Tooltip("Lọc nhân viên theo phòng ban:\n• Chọn phòng ban để hiển thị nhân viên thuộc phòng đó\n• Khi chỉnh sửa, tự động chọn phòng ban hiện tại"));
+        managerComboBox.setTooltip(new Tooltip("Trưởng phòng (Tùy chọn):\n• Hiển thị tất cả nhân viên đang làm việc trong phòng ban\n• Chọn bất kỳ nhân viên nào làm trưởng phòng\n• Có thể để trống nếu chưa có"));
 
         // Điền dữ liệu nếu đang edit
         if (existingDept != null) {
@@ -803,18 +873,34 @@ public class OrganizationController implements Initializable {
             phoneField.setText(existingDept.getPhone());
             emailField.setText(existingDept.getEmail());
             
-            // Set trưởng phòng nếu có
-            if (existingDept.getManagerId() != null && existingDept.getManagerId() > 0) {
-                for (Employee emp : managerComboBox.getItems()) {
-                    if (emp.getId() == existingDept.getManagerId()) {
-                        managerComboBox.getSelectionModel().select(emp);
-                        break;
-                    }
+            // Tự động chọn phòng ban hiện tại trong department filter để hiển thị nhân viên của phòng đó
+            for (Department dept : departmentFilterComboBox.getItems()) {
+                if (dept.getId() == existingDept.getId()) {
+                    departmentFilterComboBox.getSelectionModel().select(dept);
+                    break;
                 }
+            }
+            
+            // Set trưởng phòng nếu có (sau khi đã cập nhật department filter)
+            if (existingDept.getManagerId() != null && existingDept.getManagerId() > 0) {
+                // Đợi department filter update xong rồi mới set manager
+                javafx.application.Platform.runLater(() -> {
+                    for (Employee emp : managerComboBox.getItems()) {
+                        if (emp.getId() == existingDept.getManagerId()) {
+                            managerComboBox.getSelectionModel().select(emp);
+                            break;
+                        }
+                    }
+                });
             } else {
                 // Chọn "Không có trưởng phòng" (item đầu tiên)
-                managerComboBox.getSelectionModel().selectFirst();
+                javafx.application.Platform.runLater(() -> {
+                    managerComboBox.getSelectionModel().selectFirst();
+                });
             }
+        } else {
+            // Khi thêm phòng ban mới, giữ nguyên logic filter thủ công
+            departmentFilterComboBox.getSelectionModel().selectFirst();
         }
 
         // Layout với GridPane để label và field cùng hàng
@@ -838,6 +924,8 @@ public class OrganizationController implements Initializable {
         phoneLabel.setStyle(requiredStyle);
         Label emailLabel = new Label("📧 Email: *");
         emailLabel.setStyle(requiredStyle);
+        Label departmentFilterLabel = new Label("🔍 Lọc theo phòng ban:");
+        departmentFilterLabel.setStyle(labelStyle);
         Label managerLabel = new Label("👤 Trưởng phòng:");
         managerLabel.setStyle(labelStyle); // Không bắt buộc nên không có dấu *
         
@@ -854,8 +942,10 @@ public class OrganizationController implements Initializable {
         form.add(phoneField, 1, 4);
         form.add(emailLabel, 0, 5);
         form.add(emailField, 1, 5);
-        form.add(managerLabel, 0, 6);
-        form.add(managerComboBox, 1, 6);
+        form.add(departmentFilterLabel, 0, 6);
+        form.add(departmentFilterComboBox, 1, 6);
+        form.add(managerLabel, 0, 7);
+        form.add(managerComboBox, 1, 7);
 
         dialog.getDialogPane().setContent(form);
         dialog.getDialogPane().getButtonTypes().addAll(ButtonType.OK, ButtonType.CANCEL);
@@ -1094,5 +1184,254 @@ public class OrganizationController implements Initializable {
     @FXML
     private void onExitAdd() {
         btnAddDepartment.setStyle("-fx-background-color: #27ae60; -fx-text-fill: white; -fx-padding: 12 24; -fx-background-radius: 25; -fx-font-size: 14px; -fx-font-weight: bold; -fx-effect: dropshadow(three-pass-box, rgba(0,0,0,0.3), 8, 0, 0, 2); -fx-cursor: hand;");
+    }
+
+    /**
+     * Cập nhật danh sách trưởng phòng dựa trên phòng ban được chọn
+     * Hiển thị tất cả nhân viên đang làm việc trong phòng ban đó (không phân biệt role)
+     * để người dùng có thể chọn bất kỳ ai làm trưởng phòng
+     */
+    private void updateManagerComboBox(Department selectedDepartment, ComboBox<Employee> managerComboBox) {
+        try {
+            ObservableList<Employee> employeeList = FXCollections.observableArrayList();
+            
+            // Luôn thêm option "Không có trưởng phòng"
+            Employee noManager = new Employee();
+            noManager.setId(0);
+            noManager.setFirstName("Không có");
+            noManager.setLastName("trưởng phòng");
+            employeeList.add(noManager);
+            
+            // Nếu chọn phòng ban cụ thể (không phải option "Chọn phòng ban...")
+            if (selectedDepartment != null && selectedDepartment.getId() > 0) {
+                // Lấy nhân viên trong phòng ban đó có thể làm trưởng phòng
+                List<Employee> departmentEmployees = employeeService.getEmployeesByDepartmentForManager(selectedDepartment.getId());
+                employeeList.addAll(departmentEmployees);
+                
+                if (DEBUG) {
+                    System.out.println("=== MANAGER FILTER DEBUG ===");
+                    System.out.println("Phòng ban: " + selectedDepartment.getDepartmentName());
+                    System.out.println("Số nhân viên đang làm việc trong phòng ban: " + departmentEmployees.size());
+                    for (Employee emp : departmentEmployees) {
+                        System.out.println("- " + emp.getFullName() + " (ID: " + emp.getId() + ", Trạng thái: " + emp.getEmploymentStatus() + ")");
+                    }
+                }
+            }
+            
+            // Lưu selection hiện tại
+            Employee currentSelection = managerComboBox.getSelectionModel().getSelectedItem();
+            
+            // Cập nhật items
+            managerComboBox.setItems(employeeList);
+            
+            // Cố gắng giữ selection cũ nếu có trong danh sách mới
+            if (currentSelection != null) {
+                boolean found = false;
+                for (Employee emp : employeeList) {
+                    if (emp.getId() == currentSelection.getId()) {
+                        managerComboBox.getSelectionModel().select(emp);
+                        found = true;
+                        break;
+                    }
+                }
+                // Nếu không tìm thấy, chọn "Không có trưởng phòng"
+                if (!found) {
+                    managerComboBox.getSelectionModel().selectFirst();
+                }
+            } else {
+                // Chọn "Không có trưởng phòng" mặc định
+                managerComboBox.getSelectionModel().selectFirst();
+            }
+            
+        } catch (Exception e) {
+            System.err.println("Lỗi khi cập nhật danh sách trưởng phòng: " + e.getMessage());
+            e.printStackTrace();
+            
+            // Fallback: chỉ hiển thị option "Không có"
+            ObservableList<Employee> fallbackList = FXCollections.observableArrayList();
+            Employee noManager = new Employee();
+            noManager.setId(0);
+            noManager.setFirstName("Không có");
+            noManager.setLastName("trưởng phòng");
+            fallbackList.add(noManager);
+            managerComboBox.setItems(fallbackList);
+            managerComboBox.getSelectionModel().selectFirst();
+        }
+    }
+
+    /**
+     * Xử lý thêm nhân viên vào phòng ban
+     */
+    private void handleAddEmployeeToDepartment(Department department, Dialog<Void> parentDialog, TableView<Employee> employeeTable) {
+        try {
+            // Lấy danh sách nhân viên không thuộc phòng ban này
+            List<Employee> availableEmployees = employeeService.getEmployeesNotInDepartment(department.getId());
+            
+            if (availableEmployees.isEmpty()) {
+                showAlert(Alert.AlertType.INFORMATION, "Thông báo", 
+                    "Không có nhân viên nào khả dụng để thêm vào phòng ban này.\n" +
+                    "Tất cả nhân viên đang làm việc đã được phân công phòng ban.");
+                return;
+            }
+            
+            // Tạo dialog chọn nhân viên
+            Dialog<List<Employee>> selectDialog = createEmployeeSelectionDialog(availableEmployees, department);
+            Optional<List<Employee>> result = selectDialog.showAndWait();
+            
+            if (result.isPresent() && !result.get().isEmpty()) {
+                List<Employee> selectedEmployees = result.get();
+                int successCount = 0;
+                
+                // Thêm từng nhân viên vào phòng ban
+                for (Employee emp : selectedEmployees) {
+                    boolean success = employeeService.updateEmployeeDepartment(emp.getId(), department.getId());
+                    if (success) {
+                        successCount++;
+                    }
+                }
+                
+                if (successCount > 0) {
+                    // Hiển thị thông báo thành công
+                    showAlert(Alert.AlertType.INFORMATION, "Thành công", 
+                        "Đã thêm thành công " + successCount + " nhân viên vào phòng ban " + department.getDepartmentName() + "!");
+                    
+                    // Refresh lại danh sách nhân viên trong dialog
+                    refreshEmployeeTableInDialog(department, employeeTable);
+                    
+                    // Refresh toàn bộ dữ liệu phòng ban
+                    refreshAllData();
+                } else {
+                    showAlert(Alert.AlertType.ERROR, "Lỗi", "Không thể thêm nhân viên vào phòng ban!");
+                }
+            }
+            
+        } catch (Exception e) {
+            showAlert(Alert.AlertType.ERROR, "Lỗi", "Đã xảy ra lỗi: " + e.getMessage());
+            e.printStackTrace();
+        }
+    }
+
+    /**
+     * Refresh lại bảng nhân viên trong dialog và cập nhật label thông tin
+     */
+    private void refreshEmployeeTableInDialog(Department department, TableView<Employee> employeeTable) {
+        try {
+            List<Employee> employees = employeeService.getEmployeesByDepartment(department.getId());
+            employeeTable.setItems(FXCollections.observableArrayList(employees));
+            
+            // Cập nhật label thông tin trong dialog parent nếu có thể tìm thấy
+            javafx.scene.Parent parent = employeeTable.getParent();
+            while (parent != null) {
+                if (parent instanceof VBox) {
+                    VBox vbox = (VBox) parent;
+                    for (javafx.scene.Node node : vbox.getChildren()) {
+                        if (node instanceof HBox) {
+                            HBox hbox = (HBox) node;
+                            for (javafx.scene.Node child : hbox.getChildren()) {
+                                if (child instanceof Label) {
+                                    Label label = (Label) child;
+                                    if (label.getText().startsWith("📋 Tổng số nhân viên:")) {
+                                        label.setText("📋 Tổng số nhân viên: " + employees.size());
+                                        break;
+                                    }
+                                }
+                            }
+                        }
+                    }
+                    break;
+                }
+                parent = parent.getParent();
+            }
+            
+            if (DEBUG) {
+                System.out.println("=== REFRESH EMPLOYEE TABLE ===");
+                System.out.println("Phòng ban: " + department.getDepartmentName());
+                System.out.println("Số nhân viên sau khi cập nhật: " + employees.size());
+            }
+        } catch (Exception e) {
+            System.err.println("Lỗi khi refresh bảng nhân viên: " + e.getMessage());
+        }
+    }
+
+    /**
+     * Tạo dialog để chọn nhân viên từ danh sách khả dụng
+     */
+    private Dialog<List<Employee>> createEmployeeSelectionDialog(List<Employee> availableEmployees, Department department) {
+        Dialog<List<Employee>> dialog = new Dialog<>();
+        dialog.setTitle("➕ Thêm nhân viên vào phòng ban - " + department.getDepartmentName());
+        dialog.setHeaderText("Chọn nhân viên muốn thêm vào phòng ban (có thể chọn nhiều)");
+        dialog.setResizable(true);
+
+        // TableView với multiple selection để chọn nhiều nhân viên
+        TableView<Employee> availableTable = new TableView<>();
+        availableTable.setStyle("-fx-font-size: 13px;");
+        availableTable.getSelectionModel().setSelectionMode(SelectionMode.MULTIPLE);
+
+        // Cột họ tên
+        TableColumn<Employee, String> nameCol = new TableColumn<>("👤 Họ tên");
+        nameCol.setCellValueFactory(data ->
+                new SimpleStringProperty(data.getValue().getFirstName() + " " + data.getValue().getLastName()));
+        nameCol.setPrefWidth(180);
+
+        // Cột phòng ban hiện tại
+        TableColumn<Employee, String> currentDeptCol = new TableColumn<>("🏢 Phòng ban hiện tại");
+        currentDeptCol.setCellValueFactory(data -> {
+            String deptName = data.getValue().getDepartmentName();
+            return new SimpleStringProperty(deptName != null ? deptName : "Chưa có");
+        });
+        currentDeptCol.setPrefWidth(150);
+
+        // Cột Email
+        TableColumn<Employee, String> emailCol = new TableColumn<>("📧 Email");
+        emailCol.setCellValueFactory(new PropertyValueFactory<>("email"));
+        emailCol.setPrefWidth(200);
+
+        // Cột Điện thoại
+        TableColumn<Employee, String> phoneCol = new TableColumn<>("📞 Điện thoại");
+        phoneCol.setCellValueFactory(new PropertyValueFactory<>("phone"));
+        phoneCol.setPrefWidth(130);
+
+        availableTable.getColumns().add(nameCol);
+        availableTable.getColumns().add(currentDeptCol);
+        availableTable.getColumns().add(emailCol);
+        availableTable.getColumns().add(phoneCol);
+        availableTable.setItems(FXCollections.observableArrayList(availableEmployees));
+        availableTable.setEditable(true);
+
+        // Layout
+        VBox content = new VBox(15);
+        content.setStyle("-fx-padding: 20;");
+
+        Label infoLabel = new Label("📋 Có " + availableEmployees.size() + " nhân viên khả dụng");
+        infoLabel.setStyle("-fx-font-size: 14px; -fx-font-weight: bold; -fx-text-fill: #2c3e50;");
+
+        Label instructionLabel = new Label("💡 Click để chọn nhân viên, giữ Ctrl+Click để chọn nhiều nhân viên");
+        instructionLabel.setStyle("-fx-font-size: 12px; -fx-text-fill: #7f8c8d; -fx-font-style: italic;");
+
+        content.getChildren().addAll(infoLabel, instructionLabel, availableTable);
+
+        availableTable.setPrefHeight(400);
+        availableTable.setPrefWidth(750);
+
+        dialog.getDialogPane().setContent(content);
+        dialog.getDialogPane().getButtonTypes().addAll(ButtonType.OK, ButtonType.CANCEL);
+        
+        // Styling cho buttons
+        dialog.getDialogPane().lookupButton(ButtonType.OK).setStyle(
+                "-fx-background-color: #27ae60; -fx-text-fill: white; -fx-font-weight: bold; -fx-padding: 8 16; -fx-background-radius: 5;"
+        );
+        dialog.getDialogPane().lookupButton(ButtonType.CANCEL).setStyle(
+                "-fx-background-color: #95a5a6; -fx-text-fill: white; -fx-font-weight: bold; -fx-padding: 8 16; -fx-background-radius: 5;"
+        );
+
+        // Convert result - lấy các nhân viên được chọn từ selection model
+        dialog.setResultConverter(dialogButton -> {
+            if (dialogButton == ButtonType.OK) {
+                return new ArrayList<>(availableTable.getSelectionModel().getSelectedItems());
+            }
+            return null;
+        });
+
+        return dialog;
     }
 } 
