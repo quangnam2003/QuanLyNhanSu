@@ -39,18 +39,24 @@ public class DepartmentService {
     public List<Department> getAllDepartmentsWithDetails() {
         List<Department> departments = new ArrayList<>();
         String sql = """
-            SELECT d.*, 
-                   CONCAT(e.first_name, ' ', e.last_name) as manager_name,
-                   (SELECT COUNT(*) FROM employees emp WHERE emp.department_id = d.id AND emp.employment_status IN ('Đang làm việc', 'Đã nghỉ việc')) as employee_count
-            FROM departments d 
-            LEFT JOIN employees e ON d.manager_id = e.id 
-            ORDER BY d.department_code
-        """;
-        
+        SELECT d.*,
+               CONCAT(e.first_name, ' ', e.last_name) as manager_name,
+               (
+                   SELECT COUNT(*) 
+                   FROM employees emp 
+                   WHERE emp.department_id = d.id 
+                         AND emp.is_deleted = 0 
+                         AND emp.employment_status IN ('Đang làm việc', 'Đã nghỉ việc')
+               ) as employee_count
+        FROM departments d 
+        LEFT JOIN employees e ON d.manager_id = e.id 
+        ORDER BY d.department_code
+    """;
+
         try (Connection conn = DBUtil.getConnection();
              PreparedStatement stmt = conn.prepareStatement(sql);
              ResultSet rs = stmt.executeQuery()) {
-            
+
             while (rs.next()) {
                 Department dept = new Department();
                 dept.setId(rs.getInt("id"));
@@ -62,11 +68,11 @@ public class DepartmentService {
                 dept.setAddress(rs.getString("address"));
                 dept.setPhone(rs.getString("phone"));
                 dept.setEmail(rs.getString("email"));
-                
+
                 // Thêm thông tin bổ sung
                 dept.setManagerName(rs.getString("manager_name"));
                 dept.setEmployeeCount(rs.getInt("employee_count"));
-                
+
                 departments.add(dept);
             }
         } catch (SQLException e) {
@@ -111,10 +117,10 @@ public class DepartmentService {
         String sql = "SELECT * FROM departments WHERE id = ?";
         try (Connection conn = DBUtil.getConnection();
              PreparedStatement stmt = conn.prepareStatement(sql)) {
-            
+
             stmt.setInt(1, id);
             ResultSet rs = stmt.executeQuery();
-            
+
             if (rs.next()) {
                 Department dept = new Department();
                 dept.setId(rs.getInt("id"));
@@ -140,10 +146,10 @@ public class DepartmentService {
                                    description, address, phone, email) 
             VALUES (?, ?, ?, ?, ?, ?, ?, ?)
         """;
-        
+
         try (Connection conn = DBUtil.getConnection();
              PreparedStatement stmt = conn.prepareStatement(sql)) {
-            
+
             stmt.setString(1, department.getDepartmentCode());
             stmt.setString(2, department.getDepartmentName());
             stmt.setObject(3, department.getParentId());
@@ -152,7 +158,7 @@ public class DepartmentService {
             stmt.setString(6, department.getAddress());
             stmt.setString(7, department.getPhone());
             stmt.setString(8, department.getEmail());
-            
+
             int rows = stmt.executeUpdate();
             return rows > 0;
         } catch (SQLException e) {
@@ -167,10 +173,10 @@ public class DepartmentService {
                                  description=?, address=?, phone=?, email=? 
             WHERE id=?
         """;
-        
+
         try (Connection conn = DBUtil.getConnection();
              PreparedStatement stmt = conn.prepareStatement(sql)) {
-            
+
             stmt.setString(1, department.getDepartmentCode());
             stmt.setString(2, department.getDepartmentName());
             stmt.setObject(3, department.getParentId());
@@ -180,7 +186,7 @@ public class DepartmentService {
             stmt.setString(7, department.getPhone());
             stmt.setString(8, department.getEmail());
             stmt.setInt(9, department.getId());
-            
+
             int rows = stmt.executeUpdate();
             return rows > 0;
         } catch (SQLException e) {
@@ -193,7 +199,7 @@ public class DepartmentService {
         // Kiểm tra xem có nhân viên nào trong phòng ban này không
         String checkSql = "SELECT COUNT(*) FROM employees WHERE department_id = ?";
         String deleteSql = "DELETE FROM departments WHERE id = ?";
-        
+
         try (Connection conn = DBUtil.getConnection()) {
             // Kiểm tra trước khi xóa
             try (PreparedStatement checkStmt = conn.prepareStatement(checkSql)) {
@@ -204,7 +210,7 @@ public class DepartmentService {
                     return false;
                 }
             }
-            
+
             // Thực hiện xóa
             try (PreparedStatement deleteStmt = conn.prepareStatement(deleteSql)) {
                 deleteStmt.setInt(1, id);
@@ -219,7 +225,7 @@ public class DepartmentService {
 
     public Map<String, Integer> getDepartmentStats() {
         Map<String, Integer> stats = new HashMap<>();
-        
+
         String sql = """
             SELECT d.department_name, COUNT(e.id) as employee_count 
             FROM departments d 
@@ -227,18 +233,18 @@ public class DepartmentService {
             GROUP BY d.id, d.department_name 
             ORDER BY d.department_name
         """;
-        
+
         try (Connection conn = DBUtil.getConnection();
              PreparedStatement stmt = conn.prepareStatement(sql);
              ResultSet rs = stmt.executeQuery()) {
-            
+
             while (rs.next()) {
                 stats.put(rs.getString("department_name"), rs.getInt("employee_count"));
             }
         } catch (SQLException e) {
             e.printStackTrace();
         }
-        
+
         return stats;
     }
 
@@ -248,7 +254,7 @@ public class DepartmentService {
      */
     public Map<String, Map<String, Integer>> getDepartmentEmployeeStatusStats() {
         Map<String, Map<String, Integer>> stats = new HashMap<>();
-        
+
         String sql = """
             SELECT d.department_name, 
                    e.employment_status,
@@ -258,23 +264,23 @@ public class DepartmentService {
             GROUP BY d.department_name, e.employment_status
             ORDER BY d.department_name
         """;
-        
+
         try (Connection conn = DBUtil.getConnection();
              PreparedStatement stmt = conn.prepareStatement(sql);
              ResultSet rs = stmt.executeQuery()) {
-            
+
             while (rs.next()) {
                 String deptName = rs.getString("department_name");
                 String status = rs.getString("employment_status");
                 int count = rs.getInt("count");
-                
+
                 stats.computeIfAbsent(deptName, k -> new HashMap<>())
-                     .put(status != null ? status : "NULL", count);
+                        .put(status != null ? status : "NULL", count);
             }
         } catch (SQLException e) {
             e.printStackTrace();
         }
-        
+
         return stats;
     }
 
@@ -283,15 +289,15 @@ public class DepartmentService {
         if (excludeId != null) {
             sql += " AND id != ?";
         }
-        
+
         try (Connection conn = DBUtil.getConnection();
              PreparedStatement stmt = conn.prepareStatement(sql)) {
-            
+
             stmt.setString(1, departmentCode);
             if (excludeId != null) {
                 stmt.setInt(2, excludeId);
             }
-            
+
             ResultSet rs = stmt.executeQuery();
             if (rs.next()) {
                 return rs.getInt(1) > 0;
@@ -307,7 +313,7 @@ public class DepartmentService {
      */
     public void debugEmployeeData() {
         System.out.println("=== DEBUG: Kiểm tra dữ liệu nhân viên và phòng ban ===");
-        
+
         // Kiểm tra tổng số nhân viên
         try (Connection conn = DBUtil.getConnection()) {
             String totalEmployeesSql = "SELECT COUNT(*) FROM employees";
@@ -317,7 +323,7 @@ public class DepartmentService {
                     System.out.println("Tổng số nhân viên trong database: " + rs.getInt(1));
                 }
             }
-            
+
             // Kiểm tra nhân viên theo employment_status
             String statusSql = "SELECT employment_status, COUNT(*) FROM employees GROUP BY employment_status";
             try (PreparedStatement stmt = conn.prepareStatement(statusSql);
@@ -327,7 +333,7 @@ public class DepartmentService {
                     System.out.println("  - " + rs.getString(1) + ": " + rs.getInt(2) + " nhân viên");
                 }
             }
-            
+
             // Kiểm tra nhân viên theo phòng ban
             String deptSql = """
                 SELECT d.department_name, d.id as dept_id, 
@@ -342,11 +348,11 @@ public class DepartmentService {
                  ResultSet rs = stmt.executeQuery()) {
                 System.out.println("Nhân viên theo phòng ban:");
                 while (rs.next()) {
-                    System.out.println("  - " + rs.getString("department_name") + " (ID: " + rs.getInt("dept_id") + "): " 
-                        + rs.getInt("total_employees") + " tổng, " + rs.getInt("active_employees") + " đang làm việc");
+                    System.out.println("  - " + rs.getString("department_name") + " (ID: " + rs.getInt("dept_id") + "): "
+                            + rs.getInt("total_employees") + " tổng, " + rs.getInt("active_employees") + " đang làm việc");
                 }
             }
-            
+
         } catch (SQLException e) {
             System.err.println("Lỗi khi debug dữ liệu: " + e.getMessage());
             e.printStackTrace();

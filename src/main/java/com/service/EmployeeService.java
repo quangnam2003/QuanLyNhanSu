@@ -130,65 +130,6 @@ public class EmployeeService {
         return list;
     }
 
-
-    public List<Employee> searchEmployees(String keyword, Integer departmentId) {
-        List<Employee> list = new ArrayList<>();
-
-        String sql = """
-        SELECT e.*, d.department_name, p.position_name
-        FROM employees e
-        LEFT JOIN departments d ON e.department_id = d.id
-        LEFT JOIN positions p ON e.position_id = p.id
-        WHERE e.is_deleted = 0
-          AND (e.id LIKE ?
-               OR e.first_name LIKE ?
-               OR e.last_name LIKE ?
-               OR CONCAT(e.first_name, ' ', e.last_name) LIKE ?
-               OR e.phone LIKE ?
-               OR e.email LIKE ?)
-    """;
-
-        if (departmentId != null) {
-            sql += " AND e.department_id = ?";
-        }
-
-        try (Connection conn = DBUtil.getConnection();
-             PreparedStatement ps = conn.prepareStatement(sql)) {
-
-            String like = "%" + keyword + "%";
-            ps.setString(1, like);
-            ps.setString(2, like);
-            ps.setString(3, like);
-            ps.setString(4, like);
-            ps.setString(5, like);
-            ps.setString(6, like);
-
-            if (departmentId != null) {
-                ps.setInt(7, departmentId);
-            }
-
-            ResultSet rs = ps.executeQuery();
-            while (rs.next()) {
-                Employee employee = new Employee();
-                employee.setId(rs.getInt("id"));
-                employee.setFirstName(rs.getString("first_name"));
-                employee.setLastName(rs.getString("last_name"));
-                employee.setEmail(rs.getString("email"));
-                employee.setPhone(rs.getString("phone"));
-                employee.setGender(rs.getString("gender"));
-                employee.setEmploymentStatus(rs.getString("employment_status"));
-                employee.setHireDate(rs.getDate("hire_date") != null ? rs.getDate("hire_date").toLocalDate() : null);
-                employee.setDepartmentName(rs.getString("department_name"));
-                employee.setPositionName(rs.getString("position_name"));
-                list.add(employee);
-            }
-        } catch (SQLException e) {
-            e.printStackTrace();
-        }
-        return list;
-    }
-
-
     public List<Employee> searchEmployee(String keyword) {
         List<Employee> list = new ArrayList<>();
 
@@ -453,6 +394,4 @@ public class EmployeeService {
         }
         return employees;
     }
-
-
 }
