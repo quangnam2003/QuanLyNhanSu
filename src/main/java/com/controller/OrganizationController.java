@@ -314,10 +314,19 @@ public class OrganizationController implements Initializable {
             // Xóa các department boxes cũ
             departmentBoxes.getChildren().clear();
             
+            // Thiết lập HBox để các ô được phân bố đều
+            departmentBoxes.setAlignment(Pos.CENTER);
+            
             // Tạo department boxes động dựa trên dữ liệu thực
             for (Department department : departments) {
                 VBox deptBox = createDepartmentBox(department);
                 departmentBoxes.getChildren().add(deptBox);
+            }
+            
+            // Nếu có nhiều hơn 6 phòng ban, có thể cần xuống dòng
+            if (departments.size() > 6) {
+                // Điều chỉnh spacing để fit màn hình tốt hơn
+                departmentBoxes.setSpacing(10);
             }
             
         } catch (Exception e) {
@@ -399,36 +408,49 @@ public class OrganizationController implements Initializable {
         String departmentName = department.getDepartmentName();
         int employeeCount = department.getEmployeeCount();
         
+        // Đặt kích thước cố định cho tất cả các ô để cân đối
+        deptBox.setPrefWidth(180);
+        deptBox.setMinWidth(180);
+        deptBox.setMaxWidth(180);
+        deptBox.setPrefHeight(120);
+        deptBox.setMinHeight(120);
+        deptBox.setMaxHeight(120);
+        
         // Chọn màu dựa trên tên phòng ban
         String backgroundColor = getDepartmentColor(departmentName);
-        deptBox.setStyle("-fx-background-color: linear-gradient(to bottom, " + backgroundColor + ", " + 
-            getDarkerColor(backgroundColor) + "); -fx-padding: 18 25; -fx-background-radius: 12; " +
-            "-fx-effect: dropshadow(three-pass-box, rgba(0,0,0,0.2), 10, 0, 0, 3);");
+        String baseStyle = "-fx-background-color: linear-gradient(to bottom, " + backgroundColor + ", " + 
+            getDarkerColor(backgroundColor) + "); -fx-padding: 15; -fx-background-radius: 12; " +
+            "-fx-effect: dropshadow(three-pass-box, rgba(0,0,0,0.2), 10, 0, 0, 3);";
+        deptBox.setStyle(baseStyle);
         
         // Icon cho phòng ban
         String icon = getDepartmentIcon(departmentName);
         Label iconLabel = new Label(icon);
         iconLabel.setStyle("-fx-font-size: 24px;");
         
+        // Tên phòng ban với xử lý text wrapping để không bị khuất
         Label nameLabel = new Label(departmentName);
-        nameLabel.setStyle("-fx-font-size: 14px; -fx-font-weight: bold; -fx-text-fill: white;");
+        nameLabel.setStyle("-fx-font-size: 13px; -fx-font-weight: bold; -fx-text-fill: white; -fx-text-alignment: center;");
+        nameLabel.setWrapText(true); // Cho phép xuống dòng
+        nameLabel.setMaxWidth(150); // Giới hạn width để text wrap
+        nameLabel.setAlignment(Pos.CENTER);
         
         Label countLabel = new Label(employeeCount + " nhân viên");
-        countLabel.setStyle("-fx-font-size: 12px; -fx-text-fill: rgba(255,255,255,0.9);");
+        countLabel.setStyle("-fx-font-size: 11px; -fx-text-fill: rgba(255,255,255,0.9); -fx-text-alignment: center;");
+        countLabel.setAlignment(Pos.CENTER);
         
         deptBox.getChildren().addAll(iconLabel, nameLabel, countLabel);
         
-        // Hover effect
+        // Hover effect với kích thước cố định
         deptBox.setOnMouseEntered(e -> {
-            deptBox.setStyle("-fx-background-color: linear-gradient(to bottom, " + backgroundColor + ", " + 
-                getDarkerColor(backgroundColor) + "); -fx-padding: 18 25; -fx-background-radius: 12; " +
-                "-fx-effect: dropshadow(three-pass-box, rgba(0,0,0,0.4), 15, 0, 0, 5); -fx-cursor: hand; -fx-scale-x: 1.05; -fx-scale-y: 1.05;");
+            String hoverStyle = "-fx-background-color: linear-gradient(to bottom, " + backgroundColor + ", " + 
+                getDarkerColor(backgroundColor) + "); -fx-padding: 15; -fx-background-radius: 12; " +
+                "-fx-effect: dropshadow(three-pass-box, rgba(0,0,0,0.4), 15, 0, 0, 5); -fx-cursor: hand; -fx-scale-x: 1.03; -fx-scale-y: 1.03;";
+            deptBox.setStyle(hoverStyle);
         });
         
         deptBox.setOnMouseExited(e -> {
-            deptBox.setStyle("-fx-background-color: linear-gradient(to bottom, " + backgroundColor + ", " + 
-                getDarkerColor(backgroundColor) + "); -fx-padding: 18 25; -fx-background-radius: 12; " +
-                "-fx-effect: dropshadow(three-pass-box, rgba(0,0,0,0.2), 10, 0, 0, 3);");
+            deptBox.setStyle(baseStyle);
         });
         
         // Thêm click handler để xem danh sách nhân viên

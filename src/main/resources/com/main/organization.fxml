@@ -37,7 +37,7 @@
                 </VBox>
                 
                 <!-- Department Level - Dynamic -->
-                <HBox fx:id="departmentBoxes" spacing="20" alignment="CENTER">
+                <HBox fx:id="departmentBoxes" spacing="15" alignment="CENTER" style="-fx-padding: 10;">
                     <!-- Các phòng ban sẽ được tạo động từ database -->
                 </HBox>
             </VBox>

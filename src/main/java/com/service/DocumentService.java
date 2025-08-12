@@ -4,6 +4,7 @@ import com.model.Document;
 import com.utils.DBUtil;
 
 import java.sql.*;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
@@ -194,6 +195,10 @@ public class DocumentService {
     }
 
     public List<Document> searchDocuments(String keyword, String category) {
+        return searchDocuments(keyword, category, null, null);
+    }
+    
+    public List<Document> searchDocuments(String keyword, String category, LocalDate fromDate, LocalDate toDate) {
         List<Document> documents = new ArrayList<>();
         StringBuilder sql = new StringBuilder("SELECT id, title, file_name, category, last_updated FROM documents WHERE 1=1");
         
@@ -203,6 +208,14 @@ public class DocumentService {
         
         if (category != null && !category.trim().isEmpty() && !category.equals("Tất cả")) {
             sql.append(" AND category = ?");
+        }
+        
+        if (fromDate != null) {
+            sql.append(" AND DATE(last_updated) >= ?");
+        }
+        
+        if (toDate != null) {
+            sql.append(" AND DATE(last_updated) <= ?");
         }
         
         sql.append(" ORDER BY last_updated DESC");
@@ -219,7 +232,15 @@ public class DocumentService {
             }
             
             if (category != null && !category.trim().isEmpty() && !category.equals("Tất cả")) {
-                stmt.setString(paramIndex, category);
+                stmt.setString(paramIndex++, category);
+            }
+            
+            if (fromDate != null) {
+                stmt.setDate(paramIndex++, Date.valueOf(fromDate));
+            }
+            
+            if (toDate != null) {
+                stmt.setDate(paramIndex++, Date.valueOf(toDate));
             }
 
             ResultSet rs = stmt.executeQuery();

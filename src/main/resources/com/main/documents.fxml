@@ -25,14 +25,33 @@
         </HBox>
 
         <!-- Search and Filter -->
-        <HBox spacing="15" alignment="CENTER_LEFT">
-            <TextField fx:id="searchField" promptText="Tìm kiếm tài liệu..."
-                       prefWidth="300"
-                       style="-fx-padding: 10; -fx-background-radius: 5; -fx-border-color: #ddd; -fx-border-radius: 5;"/>
-            <ComboBox fx:id="categoryFilter" promptText="Danh mục"
-                      prefWidth="150"
-                      style="-fx-padding: 10;"/>
-        </HBox>
+        <VBox spacing="10">
+            <!-- Dòng 1: Tìm kiếm và Danh mục -->
+            <HBox spacing="15" alignment="CENTER_LEFT">
+                <TextField fx:id="searchField" promptText="Tìm kiếm tài liệu..."
+                           prefWidth="300"
+                           style="-fx-padding: 10; -fx-background-radius: 5; -fx-border-color: #ddd; -fx-border-radius: 5;"/>
+                <ComboBox fx:id="categoryFilter" promptText="Danh mục"
+                          prefWidth="150"
+                          style="-fx-padding: 10;"/>
+            </HBox>
+            
+            <!-- Dòng 2: Lọc theo thời gian -->
+            <HBox spacing="15" alignment="CENTER_LEFT">
+                <Label text="Lọc theo thời gian:" style="-fx-font-weight: bold; -fx-font-size: 14px;"/>
+                <Label text="Từ ngày:" style="-fx-font-size: 12px;"/>
+                <DatePicker fx:id="fromDatePicker" promptText="Chọn ngày bắt đầu" 
+                           prefWidth="150"
+                           style="-fx-padding: 8;"/>
+                <Label text="Đến ngày:" style="-fx-font-size: 12px;"/>
+                <DatePicker fx:id="toDatePicker" promptText="Chọn ngày kết thúc"
+                           prefWidth="150" 
+                           style="-fx-padding: 8;"/>
+                <Button fx:id="clearDateFilterBtn" text="Xóa lọc" 
+                        onAction="#clearDateFilter"
+                        style="-fx-background-color: #95a5a6; -fx-text-fill: white; -fx-padding: 8 12; -fx-background-radius: 5; -fx-cursor: hand;"/>
+            </HBox>
+        </VBox>
 
         <!-- Documents Table -->
         <TableView fx:id="documentTable" style="-fx-background-color: white; -fx-border-color: #ddd; -fx-border-radius: 8;">

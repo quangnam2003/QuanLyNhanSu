@@ -16,10 +16,11 @@ import javafx.scene.layout.HBox;
 import javafx.stage.FileChooser;
 import javafx.util.Callback;
 
-import java.awt.Desktop;
+
 import java.io.*;
 import java.net.URL;
 import java.nio.file.Files;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
@@ -39,6 +40,9 @@ public class DocumentController implements Initializable {
 
     @FXML private TextField searchField;
     @FXML private ComboBox<String> categoryFilter;
+    @FXML private DatePicker fromDatePicker;
+    @FXML private DatePicker toDatePicker;
+    @FXML private Button clearDateFilterBtn;
     @FXML private Button btnAddDocument;
 
     @FXML private Label lblTotal;
@@ -52,6 +56,7 @@ public class DocumentController implements Initializable {
         loadDocumentData();
         loadCategoryFilter();
         setupSearchAndFilter();
+        setupDateFilters();
         setupActionColumn();
         updateStatistics();
     }
@@ -157,6 +162,15 @@ public class DocumentController implements Initializable {
         // Filter functionality
         categoryFilter.setOnAction(e -> filterDocuments());
     }
+    
+    private void setupDateFilters() {
+        // Date filter functionality
+        fromDatePicker.setOnAction(e -> filterDocuments());
+        toDatePicker.setOnAction(e -> filterDocuments());
+        
+        // Clear filter button
+        clearDateFilterBtn.setOnAction(e -> clearDateFilter());
+    }
 
     private void loadDocumentData() {
         List<Document> documents = documentService.getAllDocuments();
@@ -175,8 +189,10 @@ public class DocumentController implements Initializable {
     private void filterDocuments() {
         String keyword = searchField.getText();
         String selectedCategory = categoryFilter.getValue();
+        LocalDate fromDate = fromDatePicker.getValue();
+        LocalDate toDate = toDatePicker.getValue();
         
-        List<Document> filteredDocuments = documentService.searchDocuments(keyword, selectedCategory);
+        List<Document> filteredDocuments = documentService.searchDocuments(keyword, selectedCategory, fromDate, toDate);
         documentList.clear();
         documentList.addAll(filteredDocuments);
         documentTable.setItems(documentList);
@@ -583,5 +599,12 @@ public class DocumentController implements Initializable {
         }
         
         return fileName;
+    }
+    
+    @FXML
+    private void clearDateFilter() {
+        fromDatePicker.setValue(null);
+        toDatePicker.setValue(null);
+        filterDocuments();
     }
 }
