@@ -15,6 +15,12 @@ import java.util.List;
 
 public class AddEmployeeController {
 
+    // ====== Services ======
+    private final EmployeeService employeeService = new EmployeeService();
+    private final DepartmentService departmentService = new DepartmentService();
+    private final PositionService positionService = new PositionService();
+
+    // ====== FXML controls ======
     @FXML private TextField txtFirstName;
     @FXML private TextField txtLastName;
     @FXML private TextField txtEmail;
@@ -32,9 +38,7 @@ public class AddEmployeeController {
     @FXML private Button btnSave;
     @FXML private Button btnCancel;
 
-    private final EmployeeService employeeService = new EmployeeService();
-    private final DepartmentService departmentService = new DepartmentService();
-    private final PositionService positionService = new PositionService();
+    // ====== State ======
     private Employee editingEmployee = null;
 
     @FXML
@@ -42,26 +46,20 @@ public class AddEmployeeController {
         cbGender.setItems(FXCollections.observableArrayList("Nam", "Nữ"));
         cbStatus.setItems(FXCollections.observableArrayList("Đang làm việc", "Đã nghỉ việc"));
 
+        // Load list phòng ban & chức vụ (chức vụ sẽ filter theo phòng ban)
         cbDepartment.setItems(FXCollections.observableArrayList(departmentService.getAllDepartments()));
         cbPosition.setItems(FXCollections.observableArrayList(positionService.getAllPositions()));
-
-        //Kiểm tra nếu đang ở chế độ sửa
-        if (editingEmployee != null) {
-            cbDepartment.setValue(departmentService.getDepartmentById(editingEmployee.getDepartmentId()));
-            cbPosition.setValue(positionService.getPositionById(editingEmployee.getPositionId()));
-        }
 
         cbDepartment.setOnAction(event -> {
             Department selected = cbDepartment.getValue();
             if (selected != null) {
                 List<Position> filtered = positionService.getPositionsByDepartmentId(selected.getId());
                 cbPosition.getItems().setAll(filtered);
+                cbPosition.getSelectionModel().clearSelection();
             } else {
                 cbPosition.getItems().clear();
             }
         });
-
-
     }
 
     @FXML
@@ -87,6 +85,7 @@ public class AddEmployeeController {
 
             boolean success;
             if (editingEmployee == null) {
+                // Add
                 success = employeeService.addEmployee(emp);
                 if (success) {
                     showAlert(Alert.AlertType.INFORMATION, "Thành công", "Đã thêm nhân viên.");
@@ -94,13 +93,34 @@ public class AddEmployeeController {
                     showAlert(Alert.AlertType.ERROR, "Thất bại", "Không thể thêm nhân viên.");
                 }
             } else {
-                emp.setId(editingEmployee.getId()); // giữ nguyên ID cũ
+                // Update
+                emp.setId(editingEmployee.getId());
                 success = employeeService.updateEmployee(emp);
-                if (success) {
-                    showAlert(Alert.AlertType.INFORMATION, "Thành công", "Đã cập nhật nhân viên.");
-                } else {
+                if (!success) {
                     showAlert(Alert.AlertType.ERROR, "Thất bại", "Không thể cập nhật nhân viên.");
+                    return;
                 }
+
+                // ====== Điểm quan trọng: nếu chọn vị trí level=4 (Trưởng phòng) thì chạy promote/demote như tab Tổ chức ======
+                Position newPos = cbPosition.getValue();
+                Department dept = cbDepartment.getValue();
+                if (newPos != null && dept != null && newPos.getLevel() == 4) {
+                    try {
+                        // 1) Hạ cấp các trưởng phòng cũ trong phòng này (trừ người đang sửa)
+                        employeeService.demoteManagersOfDepartment(dept.getId(), editingEmployee.getId());
+
+                        // 2) Thăng chức người đang sửa thành trưởng phòng của phòng này (đồng bộ luôn departments.manager_id)
+                        employeeService.promoteToManager(editingEmployee.getId(), dept.getId());
+
+                    } catch (Exception ex) {
+                        ex.printStackTrace();
+                        showAlert(Alert.AlertType.WARNING,
+                                "Cảnh báo",
+                                "Đã lưu thông tin nhưng lỗi khi đồng bộ trưởng phòng. Vui lòng kiểm tra lại.");
+                    }
+                }
+
+                showAlert(Alert.AlertType.INFORMATION, "Thành công", "Đã cập nhật nhân viên.");
             }
 
             if (success) closeWindow();
@@ -110,8 +130,6 @@ public class AddEmployeeController {
             showAlert(Alert.AlertType.ERROR, "Lỗi hệ thống", "Vui lòng kiểm tra lại dữ liệu.");
         }
     }
-
-
 
     @FXML
     private void handleCancel() {
@@ -130,16 +148,6 @@ public class AddEmployeeController {
         alert.setContentText(message);
         alert.showAndWait();
     }
-
-    private void updatePositionList() {
-        Department selectedDept = cbDepartment.getValue();
-        if (selectedDept != null) {
-            List<Position> filteredPositions = positionService.getPositionsByDepartmentId(selectedDept.getId());
-            cbPosition.setItems(FXCollections.observableArrayList(filteredPositions));
-            cbPosition.getSelectionModel().clearSelection();
-        }
-    }
-
 
     private boolean isValidForm() {
         StringBuilder msg = new StringBuilder();
@@ -168,17 +176,14 @@ public class AddEmployeeController {
         if (cbDepartment.getValue() == null) msg.append("Vui lòng chọn Phòng ban.\n");
         if (cbPosition.getValue() == null) msg.append("Vui lòng chọn Chức vụ.\n");
 
-        if (dateHire.getValue() == null) msg.append("Vui lòng chọn Ngày vào làm.\n");
-        if (cbStatus.getValue() == null) msg.append("Vui lòng chọn Trạng thái làm việc.\n");
-
-        if (!msg.isEmpty()) {
-            showAlert(Alert.AlertType.ERROR, "Lỗi nhập liệu", msg.toString());
+        if (msg.length() > 0) {
+            showAlert(Alert.AlertType.WARNING, "Thiếu thông tin", msg.toString());
             return false;
         }
-
         return true;
     }
 
+    // ====== API từ EmployeeController gọi sang để set nhân viên đang sửa ======
     public void setEmployeeToEdit(Employee employee) {
         this.editingEmployee = employee;
         fillFormWithEmployeeData();
@@ -187,26 +192,46 @@ public class AddEmployeeController {
     private void fillFormWithEmployeeData() {
         if (editingEmployee == null) return;
 
+        // basic fields
         txtFirstName.setText(editingEmployee.getFirstName());
         txtLastName.setText(editingEmployee.getLastName());
         txtEmail.setText(editingEmployee.getEmail());
         txtPhone.setText(editingEmployee.getPhone());
         txtCitizenId.setText(editingEmployee.getCitizenId());
-
-        if (editingEmployee.getDateOfBirth() != null)
-            dateBirth.setValue(editingEmployee.getDateOfBirth());
-
+        if (editingEmployee.getDateOfBirth() != null) dateBirth.setValue(editingEmployee.getDateOfBirth());
         cbGender.setValue(editingEmployee.getGender());
-
-        cbDepartment.setValue(departmentService.getDepartmentById(editingEmployee.getDepartmentId()));
-        cbPosition.setValue(positionService.getPositionById(editingEmployee.getPositionId()));
-
-        if (editingEmployee.getHireDate() != null)
-            dateHire.setValue(editingEmployee.getHireDate());
-
+        if (editingEmployee.getHireDate() != null) dateHire.setValue(editingEmployee.getHireDate());
         cbStatus.setValue(editingEmployee.getEmploymentStatus());
         txtEmergencyName.setText(editingEmployee.getEmergencyContactName());
         txtEmergencyPhone.setText(editingEmployee.getEmergencyContactPhone());
         txtEmergencyRelation.setText(editingEmployee.getEmergencyContactRelationship());
+
+        // Department list nếu rỗng thì load
+        if (cbDepartment.getItems().isEmpty()) {
+            cbDepartment.setItems(FXCollections.observableArrayList(departmentService.getAllDepartments()));
+        }
+        // chọn department theo id
+        Department deptToSelect = cbDepartment.getItems().stream()
+                .filter(d -> d.getId() == editingEmployee.getDepartmentId())
+                .findFirst()
+                .orElse(null);
+        cbDepartment.getSelectionModel().select(deptToSelect);
+
+        // load position theo phòng ban đang chọn
+        if (deptToSelect != null) {
+            List<Position> filtered = positionService.getPositionsByDepartmentId(deptToSelect.getId());
+            cbPosition.getItems().setAll(filtered);
+        } else {
+            cbPosition.getItems().clear();
+        }
+
+        // chọn position theo id
+        if (!cbPosition.getItems().isEmpty()) {
+            Position posToSelect = cbPosition.getItems().stream()
+                    .filter(p -> p.getId() == editingEmployee.getPositionId())
+                    .findFirst()
+                    .orElse(null);
+            cbPosition.getSelectionModel().select(posToSelect);
+        }
     }
 }

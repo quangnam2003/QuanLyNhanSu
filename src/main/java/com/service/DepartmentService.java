@@ -36,6 +36,20 @@ public class DepartmentService {
         return departments;
     }
 
+    public boolean updateManagerId(int departmentId, int employeeId) {
+        String updateSql = "UPDATE departments SET manager_id = ? WHERE id = ?";
+
+        try (Connection conn = DBUtil.getConnection();
+             PreparedStatement updateStmt = conn.prepareStatement(updateSql)) {
+            updateStmt.setInt(1, employeeId);
+            updateStmt.setInt(2, departmentId);
+            return updateStmt.executeUpdate() > 0;
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+        return false;
+    }
+
     public List<Department> getAllDepartmentsWithDetails() {
         List<Department> departments = new ArrayList<>();
         String sql = """

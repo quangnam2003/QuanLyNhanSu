@@ -56,7 +56,6 @@ public class EmployeeService {
                 employee.setEmergencyContactRelationship(rs.getString("emergency_contact_relationship"));
                 employee.setNotes(rs.getString("notes"));
 
-                // Thêm thông tin từ bảng liên kết
                 employee.setDepartmentName(rs.getString("department_name"));
                 employee.setPositionName(rs.getString("position_name"));
 
@@ -81,13 +80,9 @@ public class EmployeeService {
             WHERE e.is_deleted = 0
         """);
 
-
-        // Thêm điều kiện nếu có lọc theo phòng ban
         if (departmentName != null && !departmentName.equals("Tất cả")) {
             sql.append(" AND d.department_name = ?");
         }
-
-        // Thêm điều kiện nếu có lọc theo chức vụ
         if (positionName != null && !positionName.equals("Tất cả")) {
             sql.append(" AND p.position_name = ?");
         }
@@ -96,17 +91,14 @@ public class EmployeeService {
              PreparedStatement ps = conn.prepareStatement(sql.toString())) {
 
             int index = 1;
-
             if (departmentName != null && !departmentName.equals("Tất cả")) {
                 ps.setString(index++, departmentName);
             }
-
             if (positionName != null && !positionName.equals("Tất cả")) {
                 ps.setString(index++, positionName);
             }
 
             ResultSet rs = ps.executeQuery();
-
             while (rs.next()) {
                 Employee employee = new Employee();
                 employee.setId(rs.getInt("id"));
@@ -149,7 +141,6 @@ public class EmployeeService {
               )
         """;
 
-
         try (Connection conn = DBUtil.getConnection();
              PreparedStatement ps = conn.prepareStatement(sql)) {
 
@@ -158,11 +149,10 @@ public class EmployeeService {
             ps.setString(2, like);
             ps.setString(3, like);
             ps.setString(4, like);
-            ps.setString(5, like); // phone
-            ps.setString(6, like); // email
+            ps.setString(5, like);
+            ps.setString(6, like);
 
             ResultSet rs = ps.executeQuery();
-
             while (rs.next()) {
                 Employee employee = new Employee();
                 employee.setId(rs.getInt("id"));
@@ -175,7 +165,6 @@ public class EmployeeService {
                 employee.setHireDate(rs.getDate("hire_date") != null ? rs.getDate("hire_date").toLocalDate() : null);
                 employee.setDepartmentName(rs.getString("department_name"));
                 employee.setPositionName(rs.getString("position_name"));
-
                 list.add(employee);
             }
 
@@ -186,7 +175,6 @@ public class EmployeeService {
         return list;
     }
 
-
     public Map<String, Integer> getEmployeeStats() {
         Map<String, Integer> stats = new HashMap<>();
 
@@ -195,24 +183,18 @@ public class EmployeeService {
         String inactiveSql = "SELECT COUNT(*) FROM employees WHERE employment_status IN ('Đã nghỉ việc') AND is_deleted = 0";
 
         try (Connection conn = DBUtil.getConnection()) {
-            // Tổng
             try (PreparedStatement ps = conn.prepareStatement(totalSql);
                  ResultSet rs = ps.executeQuery()) {
                 if (rs.next()) stats.put("total", rs.getInt(1));
             }
-
-            // Đang làm
             try (PreparedStatement ps = conn.prepareStatement(workingSql);
                  ResultSet rs = ps.executeQuery()) {
                 if (rs.next()) stats.put("working", rs.getInt(1));
             }
-
-            // Nghỉ việc
             try (PreparedStatement ps = conn.prepareStatement(inactiveSql);
                  ResultSet rs = ps.executeQuery()) {
                 if (rs.next()) stats.put("inactive", rs.getInt(1));
             }
-
         } catch (Exception e) {
             e.printStackTrace();
         }
@@ -220,17 +202,12 @@ public class EmployeeService {
         return stats;
     }
 
-    /**
-     * Get total number of employees in the system.
-     */
     public int getTotalEmployeesCount() {
         String sql = "SELECT COUNT(*) FROM employees";
         try (Connection conn = DBUtil.getConnection();
              PreparedStatement ps = conn.prepareStatement(sql);
              ResultSet rs = ps.executeQuery()) {
-            if (rs.next()) {
-                return rs.getInt(1);
-            }
+            if (rs.next()) return rs.getInt(1);
         } catch (SQLException e) {
             e.printStackTrace();
         }
@@ -263,8 +240,8 @@ public class EmployeeService {
             ps.setString(10, emp.getEmergencyContactName());
             ps.setString(11, emp.getEmergencyContactPhone());
             ps.setString(12, emp.getEmergencyContactRelationship());
-            ps.setInt(13, emp.getDepartmentId()); // ✅ dùng id truyền từ controller
-            ps.setInt(14, emp.getPositionId());   // ✅ dùng id truyền từ controller
+            ps.setInt(13, emp.getDepartmentId());
+            ps.setInt(14, emp.getPositionId());
 
             int rows = ps.executeUpdate();
             return rows > 0;
@@ -278,21 +255,17 @@ public class EmployeeService {
         return false;
     }
 
-
     public void deleteEmployee(int id) {
         String sql = "UPDATE employees SET is_deleted = 1 WHERE id = ?";
 
         try (Connection conn = DBUtil.getConnection();
              PreparedStatement stmt = conn.prepareStatement(sql)) {
-
             stmt.setInt(1, id);
             stmt.executeUpdate();
-
         } catch (SQLException e) {
             e.printStackTrace();
         }
     }
-
 
     public boolean updateEmployee(Employee employee) {
         String sql = "UPDATE employees SET first_name=?, last_name=?, email=?, phone=?, citizen_id=?, date_of_birth=?, gender=?, department_id=?, position_id=?, hire_date=?, employment_status=?, emergency_contact_name=?, emergency_contact_phone=?, emergency_contact_relationship=?, notes=? WHERE id=?";
@@ -327,47 +300,31 @@ public class EmployeeService {
 
     public boolean isEmailExists(String email, Integer excludeId) {
         String sql = "SELECT COUNT(*) FROM employees WHERE email = ?";
-
-        if (excludeId != null) {
-            sql += " AND id <> ?";
-        }
-
+        if (excludeId != null) sql += " AND id <> ?";
         try (Connection conn = DBUtil.getConnection();
              PreparedStatement ps = conn.prepareStatement(sql)) {
-
             ps.setString(1, email);
             if (excludeId != null) ps.setInt(2, excludeId);
-
             ResultSet rs = ps.executeQuery();
             if (rs.next()) return rs.getInt(1) > 0;
-
         } catch (SQLException e) {
             e.printStackTrace();
         }
-
         return false;
     }
 
     public boolean isPhoneExists(String phone, Integer excludeId) {
         String sql = "SELECT COUNT(*) FROM employees WHERE phone = ?";
-
-        if (excludeId != null) {
-            sql += " AND id <> ?";
-        }
-
+        if (excludeId != null) sql += " AND id <> ?";
         try (Connection conn = DBUtil.getConnection();
              PreparedStatement ps = conn.prepareStatement(sql)) {
-
             ps.setString(1, phone);
             if (excludeId != null) ps.setInt(2, excludeId);
-
             ResultSet rs = ps.executeQuery();
             if (rs.next()) return rs.getInt(1) > 0;
-
         } catch (SQLException e) {
             e.printStackTrace();
         }
-
         return false;
     }
 
@@ -395,10 +352,6 @@ public class EmployeeService {
         return employees;
     }
 
-    /**
-     * Lấy danh sách nhân viên trong phòng ban có thể làm trưởng phòng
-     * Lấy tất cả nhân viên đang làm việc trong phòng ban đó
-     */
     public List<Employee> getEmployeesByDepartmentForManager(int departmentId) {
         List<Employee> employees = new ArrayList<>();
         String sql = """
@@ -411,12 +364,12 @@ public class EmployeeService {
               AND e.employment_status = 'Đang làm việc'
             ORDER BY e.first_name, e.last_name
         """;
-        
+
         try (Connection conn = DBUtil.getConnection();
              PreparedStatement stmt = conn.prepareStatement(sql)) {
             stmt.setInt(1, departmentId);
             ResultSet rs = stmt.executeQuery();
-            
+
             while (rs.next()) {
                 Employee emp = new Employee();
                 emp.setId(rs.getInt("id"));
@@ -431,17 +384,13 @@ public class EmployeeService {
                 emp.setRoleId(rs.getInt("role_id"));
                 emp.setDepartmentName(rs.getString("department_name"));
                 emp.setPositionName(rs.getString("position_name"));
-                
+
                 Date dobSql = rs.getDate("date_of_birth");
-                if (dobSql != null) {
-                    emp.setDateOfBirth(dobSql.toLocalDate());
-                }
-                
+                if (dobSql != null) emp.setDateOfBirth(dobSql.toLocalDate());
+
                 Date hireDateSql = rs.getDate("hire_date");
-                if (hireDateSql != null) {
-                    emp.setHireDate(hireDateSql.toLocalDate());
-                }
-                
+                if (hireDateSql != null) emp.setHireDate(hireDateSql.toLocalDate());
+
                 employees.add(emp);
             }
         } catch (SQLException e) {
@@ -450,10 +399,6 @@ public class EmployeeService {
         return employees;
     }
 
-    /**
-     * Lấy danh sách nhân viên KHÔNG thuộc phòng ban cụ thể
-     * Để có thể thêm vào phòng ban đó
-     */
     public List<Employee> getEmployeesNotInDepartment(int departmentId) {
         List<Employee> employees = new ArrayList<>();
         String sql = """
@@ -466,12 +411,12 @@ public class EmployeeService {
               AND (e.department_id IS NULL OR e.department_id != ?)
             ORDER BY e.first_name, e.last_name
         """;
-        
+
         try (Connection conn = DBUtil.getConnection();
              PreparedStatement stmt = conn.prepareStatement(sql)) {
             stmt.setInt(1, departmentId);
             ResultSet rs = stmt.executeQuery();
-            
+
             while (rs.next()) {
                 Employee emp = new Employee();
                 emp.setId(rs.getInt("id"));
@@ -486,17 +431,13 @@ public class EmployeeService {
                 emp.setRoleId(rs.getInt("role_id"));
                 emp.setDepartmentName(rs.getString("department_name"));
                 emp.setPositionName(rs.getString("position_name"));
-                
+
                 Date dobSql = rs.getDate("date_of_birth");
-                if (dobSql != null) {
-                    emp.setDateOfBirth(dobSql.toLocalDate());
-                }
-                
+                if (dobSql != null) emp.setDateOfBirth(dobSql.toLocalDate());
+
                 Date hireDateSql = rs.getDate("hire_date");
-                if (hireDateSql != null) {
-                    emp.setHireDate(hireDateSql.toLocalDate());
-                }
-                
+                if (hireDateSql != null) emp.setHireDate(hireDateSql.toLocalDate());
+
                 employees.add(emp);
             }
         } catch (SQLException e) {
@@ -505,22 +446,240 @@ public class EmployeeService {
         return employees;
     }
 
-    /**
-     * Cập nhật phòng ban cho nhân viên
-     */
     public boolean updateEmployeeDepartment(int employeeId, int newDepartmentId) {
         String sql = "UPDATE employees SET department_id = ? WHERE id = ? AND is_deleted = 0";
-        
         try (Connection conn = DBUtil.getConnection();
              PreparedStatement stmt = conn.prepareStatement(sql)) {
             stmt.setInt(1, newDepartmentId);
             stmt.setInt(2, employeeId);
-            
             int affected = stmt.executeUpdate();
             return affected > 0;
         } catch (SQLException e) {
             e.printStackTrace();
             return false;
         }
+    }
+
+    // ======================= MANAGER / POSITION SYNC =======================
+
+    /**
+     * Promote employeeId thành Trưởng phòng của departmentId:
+     * - Demote tất cả nhân viên đang giữ bất kỳ position level=4 trong phòng (trừ employeeId).
+     * - Set position_id của employeeId về 1 position level=4 (tạo nếu chưa có).
+     * - Đồng bộ departments.manager_id.
+     */
+    public boolean promoteToManager(int employeeId, int departmentId) {
+        try (Connection conn = DBUtil.getConnection()) {
+            conn.setAutoCommit(false);
+
+            Integer managerPosId = getOrCreateManagerPositionId(conn, departmentId);
+            Integer defaultPosId = getOrCreateDefaultPositionId(conn, departmentId);
+
+            // 1) Demote tất cả người đang giữ level=4 (dù position_id khác nhau)
+            String demoteSql = """
+                UPDATE employees e
+                JOIN positions p ON e.position_id = p.id
+                   AND p.department_id = ?
+                   AND p.level = 4
+                   AND p.is_deleted = 0
+                SET e.position_id = ?
+                WHERE e.department_id = ?
+                  AND e.is_deleted = 0
+                  AND e.id <> ?
+            """;
+            try (PreparedStatement st = conn.prepareStatement(demoteSql)) {
+                st.setInt(1, departmentId);
+                st.setInt(2, defaultPosId);
+                st.setInt(3, departmentId);
+                st.setInt(4, employeeId);
+                st.executeUpdate();
+            }
+
+            // 2) Set employeeId -> managerPosId (đảm bảo đúng phòng)
+            try (PreparedStatement st = conn.prepareStatement(
+                    "UPDATE employees SET department_id=?, position_id=? WHERE id=? AND is_deleted=0")) {
+                st.setInt(1, departmentId);
+                st.setInt(2, managerPosId);
+                st.setInt(3, employeeId);
+                int a = st.executeUpdate();
+                if (a == 0) { conn.rollback(); conn.setAutoCommit(true); return false; }
+            }
+
+            // 3) Update departments.manager_id
+            try (PreparedStatement st = conn.prepareStatement(
+                    "UPDATE departments SET manager_id=? WHERE id=?")) {
+                st.setInt(1, employeeId);
+                st.setInt(2, departmentId);
+                st.executeUpdate();
+            }
+
+            conn.commit();
+            conn.setAutoCommit(true);
+            return true;
+        } catch (SQLException e) {
+            e.printStackTrace();
+            return false;
+        }
+    }
+
+    /**
+     * Demote tất cả nhân viên đang giữ bất kỳ position level=4 của phòng ban.
+     * exceptEmployeeId != null thì bỏ qua người đó.
+     */
+    public boolean demoteManagersOfDepartment(int departmentId, Integer exceptEmployeeId) {
+        try (Connection conn = DBUtil.getConnection()) {
+            conn.setAutoCommit(false);
+
+            Integer defaultPosId = getOrCreateDefaultPositionId(conn, departmentId);
+
+            StringBuilder sb = new StringBuilder("""
+                UPDATE employees e
+                JOIN positions p ON e.position_id = p.id
+                   AND p.department_id = ?
+                   AND p.level = 4
+                   AND p.is_deleted = 0
+                SET e.position_id = ?
+                WHERE e.department_id = ?
+                  AND e.is_deleted = 0
+            """);
+            if (exceptEmployeeId != null) {
+                sb.append("  AND e.id <> ?");
+            }
+
+            try (PreparedStatement st = conn.prepareStatement(sb.toString())) {
+                st.setInt(1, departmentId);
+                st.setInt(2, defaultPosId);
+                st.setInt(3, departmentId);
+                if (exceptEmployeeId != null) st.setInt(4, exceptEmployeeId);
+                st.executeUpdate();
+            }
+
+            conn.commit();
+            conn.setAutoCommit(true);
+            return true;
+        } catch (SQLException e) {
+            e.printStackTrace();
+            return false;
+        }
+    }
+
+    /* ======================= Helpers ======================= */
+
+    /** Lấy id position level=4 của phòng ban, nếu chưa có thì tạo mới. */
+    private Integer getOrCreateManagerPositionId(Connection conn, int departmentId) throws SQLException {
+        Integer id = getManagerPositionId(conn, departmentId);
+        if (id != null) return id;
+
+        String code = "MANAGER_" + departmentId;
+        try (PreparedStatement ins = conn.prepareStatement(
+                "INSERT INTO positions (position_code, position_name, department_id, level, is_deleted) " +
+                        "VALUES (?, 'Trưởng phòng', ?, 4, 0)", Statement.RETURN_GENERATED_KEYS)) {
+            ins.setString(1, code);
+            ins.setInt(2, departmentId);
+            ins.executeUpdate();
+            try (ResultSet keys = ins.getGeneratedKeys()) {
+                if (keys.next()) return keys.getInt(1);
+            }
+        }
+        return null;
+    }
+
+    /** Lấy id của một position level=4 (nếu có) trong phòng ban, không tạo mới. */
+    private Integer getManagerPositionId(Connection conn, int departmentId) throws SQLException {
+        String sql = """
+            SELECT id
+            FROM positions
+            WHERE department_id = ? AND level = 4 AND is_deleted = 0
+            ORDER BY id ASC
+            LIMIT 1
+        """;
+        try (PreparedStatement ps = conn.prepareStatement(sql)) {
+            ps.setInt(1, departmentId);
+            try (ResultSet rs = ps.executeQuery()) {
+                if (rs.next()) return rs.getInt(1);
+            }
+        }
+        return null;
+    }
+
+    /** Lấy id position mặc định (level < 4) trong phòng ban; nếu chưa có thì tạo "Nhân viên" level=1. */
+    private Integer getOrCreateDefaultPositionId(Connection conn, int departmentId) throws SQLException {
+        Integer id = null;
+        String sql = """
+        SELECT id
+        FROM positions
+        WHERE department_id=? AND is_deleted=0 AND level < 4
+        ORDER BY level ASC,
+                 CASE WHEN position_name LIKE '%Nhân viên%' OR position_name LIKE '%Engineer%' OR position_name LIKE '%Chuyên viên%' THEN 0 ELSE 1 END,
+                 id ASC
+        LIMIT 1
+    """;
+        try (PreparedStatement ps = conn.prepareStatement(sql)) {
+            ps.setInt(1, departmentId);
+            try (ResultSet rs = ps.executeQuery()) {
+                if (rs.next()) id = rs.getInt(1);
+            }
+        }
+        if (id != null) return id;
+
+        String code = "NV_" + departmentId;
+        try (PreparedStatement ins = conn.prepareStatement(
+                "INSERT INTO positions (position_code, position_name, department_id, level, is_deleted) " +
+                        "VALUES (?, 'Nhân viên', ?, 1, 0)", Statement.RETURN_GENERATED_KEYS)) {
+            ins.setString(1, code);
+            ins.setInt(2, departmentId);
+            ins.executeUpdate();
+            try (ResultSet keys = ins.getGeneratedKeys()) {
+                if (keys.next()) return keys.getInt(1);
+            }
+        }
+        return null;
+    }
+
+    public Employee getEmployeeById(int id) {
+        String sql = "SELECT e.*, d.department_name, p.position_name " +
+                "FROM employees e " +
+                "LEFT JOIN departments d ON e.department_id = d.id " +
+                "LEFT JOIN positions p ON e.position_id = p.id " +
+                "WHERE e.is_deleted = 0 AND e.id = ?";
+
+        try (Connection conn = DBUtil.getConnection();
+             PreparedStatement stmt = conn.prepareStatement(sql)) {
+            stmt.setInt(1, id);
+            try (ResultSet rs = stmt.executeQuery()) {
+                if (rs.next()) {
+                    Employee emp = new Employee();
+                    emp.setId(rs.getInt("id"));
+                    emp.setFirstName(rs.getString("first_name"));
+                    emp.setLastName(rs.getString("last_name"));
+                    emp.setEmail(rs.getString("email"));
+                    emp.setPhone(rs.getString("phone"));
+                    emp.setCitizenId(rs.getString("citizen_id"));
+
+                    Date dobSql = rs.getDate("date_of_birth");
+                    if (dobSql != null) emp.setDateOfBirth(dobSql.toLocalDate());
+
+                    emp.setGender(rs.getString("gender"));
+                    emp.setDepartmentId(rs.getInt("department_id"));
+                    emp.setPositionId(rs.getInt("position_id"));
+
+                    Date hireSql = rs.getDate("hire_date");
+                    if (hireSql != null) emp.setHireDate(hireSql.toLocalDate());
+
+                    emp.setEmploymentStatus(rs.getString("employment_status"));
+                    emp.setEmergencyContactName(rs.getString("emergency_contact_name"));
+                    emp.setEmergencyContactPhone(rs.getString("emergency_contact_phone"));
+                    emp.setEmergencyContactRelationship(rs.getString("emergency_contact_relationship"));
+
+                    emp.setDepartmentName(rs.getString("department_name"));
+                    emp.setPositionName(rs.getString("position_name"));
+
+                    return emp;
+                }
+            }
+        } catch (SQLException ex) {
+            ex.printStackTrace();
+        }
+        return null;
     }
 }

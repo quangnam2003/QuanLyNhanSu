@@ -1,28 +1,26 @@
 package com.controller;
 
-import javafx.scene.control.Button;
-import javafx.scene.control.TableCell;
-import javafx.scene.control.TableColumn;
-import javafx.util.Callback;
-import javafx.scene.layout.HBox;
-import javafx.geometry.Pos;
 import com.model.Employee;
 import com.service.DepartmentService;
 import com.service.EmployeeService;
 import com.service.PositionService;
+import javafx.beans.property.SimpleStringProperty;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
 import javafx.event.ActionEvent;
 import javafx.fxml.FXML;
 import javafx.fxml.FXMLLoader;
 import javafx.fxml.Initializable;
+import javafx.geometry.Pos;
 import javafx.scene.Parent;
 import javafx.scene.Scene;
 import javafx.scene.control.*;
 import javafx.scene.control.cell.PropertyValueFactory;
-import javafx.beans.property.SimpleStringProperty;
+import javafx.scene.input.MouseEvent;
+import javafx.scene.layout.HBox;
 import javafx.stage.Modality;
 import javafx.stage.Stage;
+import javafx.util.Callback;
 
 import java.io.IOException;
 import java.net.URL;
@@ -35,6 +33,7 @@ import java.util.ResourceBundle;
 
 public class EmployeeController implements Initializable {
 
+    // ===== Table & Columns =====
     @FXML private TableView<Employee> employeeTable;
     @FXML private TableColumn<Employee, Integer> colId;
     @FXML private TableColumn<Employee, String> colFullName;
@@ -48,16 +47,17 @@ public class EmployeeController implements Initializable {
     @FXML private TableColumn<Employee, String> colStatus;
     @FXML private TableColumn<Employee, Void> actionColumn;
 
+    // ===== Filters / Search / Stats =====
     @FXML private TextField searchField;
-    @FXML private ComboBox<String> departmentFilter;
-    @FXML private ComboBox<String> positionFilter;
+    @FXML private ComboBox<String> departmentFilter; // tên phòng ban, có "Tất cả"
+    @FXML private ComboBox<String> positionFilter;   // tên chức vụ, có "Tất cả"
+    @FXML private Button btnAddEmployee;
 
     @FXML private Label lblTotal;
     @FXML private Label lblWorking;
     @FXML private Label lblInactive;
 
-    @FXML private Button btnAddEmployee;
-
+    // ===== Services =====
     private final EmployeeService employeeService = new EmployeeService();
     private final DepartmentService departmentService = new DepartmentService();
     private final PositionService positionService = new PositionService();
@@ -65,24 +65,62 @@ public class EmployeeController implements Initializable {
     @Override
     public void initialize(URL location, ResourceBundle resources) {
         setupTableColumns();
+        setupActionColumn();
+
         loadEmployeeData();
         loadEmployeeStats();
-        loadDepartmentFilter();
-        loadPositionFilter();
 
-        departmentFilter.setOnAction(e -> filterEmployees());
+        // Load dropdowns
+        loadDepartmentFilter();         // gồm "Tất cả"
+        loadPositionFilterAll();        // gồm "Tất cả"
+        updatePositionFilterByDepartment(); // đồng bộ lần đầu
+
+        // Sự kiện filter:
+        departmentFilter.setOnAction(e -> {
+            updatePositionFilterByDepartment(); // <<<< chỉ lấy position theo phòng ban
+            filterEmployees();
+        });
         positionFilter.setOnAction(e -> filterEmployees());
 
-        searchField.textProperty().addListener((observable, oldValue, newValue) -> {
-            if (newValue == null || newValue.isBlank()) {
+        // Search
+        searchField.textProperty().addListener((obs, oldV, newV) -> {
+            if (newV == null || newV.isBlank()) {
                 loadEmployeeData();
             } else {
-                List<Employee> results = employeeService.searchEmployee(newValue.trim());
+                List<Employee> results = employeeService.searchEmployee(newV.trim());
                 employeeTable.setItems(FXCollections.observableArrayList(results));
             }
         });
+    }
 
-        setupActionColumn();
+    // ====== Table setup ======
+    private void setupTableColumns() {
+        colId.setCellValueFactory(new PropertyValueFactory<>("id"));
+        colFullName.setCellValueFactory(cd -> new SimpleStringProperty(cd.getValue().getFullName()));
+        colEmail.setCellValueFactory(new PropertyValueFactory<>("email"));
+        colPhone.setCellValueFactory(new PropertyValueFactory<>("phone"));
+        colGender.setCellValueFactory(new PropertyValueFactory<>("gender"));
+        colDepartment.setCellValueFactory(new PropertyValueFactory<>("departmentName"));
+        colPosition.setCellValueFactory(new PropertyValueFactory<>("positionName"));
+        colHireDate.setCellValueFactory(new PropertyValueFactory<>("hireDate"));
+        colStatus.setCellValueFactory(new PropertyValueFactory<>("employmentStatus"));
+
+        DateTimeFormatter fmt = DateTimeFormatter.ofPattern("dd/MM/yyyy");
+        colDateOfBirth.setCellValueFactory(new PropertyValueFactory<>("dateOfBirth"));
+        colDateOfBirth.setCellFactory(col -> new TableCell<>() {
+            @Override
+            protected void updateItem(LocalDate date, boolean empty) {
+                super.updateItem(date, empty);
+                setText(empty || date == null ? null : fmt.format(date));
+            }
+        });
+        colHireDate.setCellFactory(col -> new TableCell<>() {
+            @Override
+            protected void updateItem(LocalDate date, boolean empty) {
+                super.updateItem(date, empty);
+                setText(empty || date == null ? null : fmt.format(date));
+            }
+        });
     }
 
     private void setupActionColumn() {
@@ -92,30 +130,24 @@ public class EmployeeController implements Initializable {
                 return new TableCell<>() {
                     private final Button btnEdit = new Button("Sửa");
                     private final Button btnDelete = new Button("Xoá");
-                    private final HBox hBox = new HBox(btnEdit, btnDelete);
+                    private final HBox hBox = new HBox(8, btnEdit, btnDelete);
 
                     {
-                        btnEdit.setStyle("-fx-background-color: #3498db; -fx-text-fill: white; -fx-background-radius: 5;");
-                        btnDelete.setStyle("-fx-background-color: #e74c3c; -fx-text-fill: white; -fx-background-radius: 5;");
-
-                        btnEdit.setOnMouseEntered(e -> btnEdit.setStyle("-fx-background-color: #2980b9; -fx-text-fill: white; -fx-background-radius: 5; -fx-cursor: hand;"));
-                        btnEdit.setOnMouseExited(e -> btnEdit.setStyle("-fx-background-color: #3498db; -fx-text-fill: white; -fx-background-radius: 5;"));
-
-                        btnDelete.setOnMouseEntered(e -> btnDelete.setStyle("-fx-background-color: #c0392b; -fx-text-fill: white; -fx-background-radius: 5; -fx-cursor: hand;"));
-                        btnDelete.setOnMouseExited(e -> btnDelete.setStyle("-fx-background-color: #e74c3c; -fx-text-fill: white; -fx-background-radius: 5;"));
-
-                        hBox.setSpacing(10);
                         hBox.setAlignment(Pos.CENTER);
 
-                        btnEdit.setOnAction(event -> {
+                        btnEdit.setOnAction(e -> {
                             Employee employee = getTableView().getItems().get(getIndex());
                             handleEdit(employee);
                         });
 
-                        btnDelete.setOnAction(event -> {
+                        btnDelete.setOnAction(e -> {
                             Employee employee = getTableView().getItems().get(getIndex());
                             handleDelete(employee);
                         });
+
+                        // style nhẹ
+                        btnEdit.setStyle("-fx-background-color:#3498db;-fx-text-fill:white;");
+                        btnDelete.setStyle("-fx-background-color:#e74c3c;-fx-text-fill:white;");
                     }
 
                     @Override
@@ -128,42 +160,10 @@ public class EmployeeController implements Initializable {
         });
     }
 
-    private void setupTableColumns() {
-        colId.setCellValueFactory(new PropertyValueFactory<>("id"));
-        colFullName.setCellValueFactory(cellData -> new SimpleStringProperty(cellData.getValue().getFullName()));
-        colEmail.setCellValueFactory(new PropertyValueFactory<>("email"));
-        colPhone.setCellValueFactory(new PropertyValueFactory<>("phone"));
-        colGender.setCellValueFactory(new PropertyValueFactory<>("gender"));
-        colDateOfBirth.setCellValueFactory(new PropertyValueFactory<>("dateOfBirth"));
-        colDepartment.setCellValueFactory(new PropertyValueFactory<>("departmentName"));
-        colPosition.setCellValueFactory(new PropertyValueFactory<>("positionName"));
-        colHireDate.setCellValueFactory(new PropertyValueFactory<>("hireDate"));
-        colStatus.setCellValueFactory(new PropertyValueFactory<>("employmentStatus"));
-
-        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("dd/MM/yyyy");
-
-        colDateOfBirth.setCellFactory(column -> new TableCell<Employee, LocalDate>() {
-            @Override
-            protected void updateItem(LocalDate date, boolean empty) {
-                super.updateItem(date, empty);
-                setText(empty || date == null ? null : formatter.format(date));
-            }
-        });
-
-        colHireDate.setCellFactory(column -> new TableCell<Employee, LocalDate>() {
-            @Override
-            protected void updateItem(LocalDate date, boolean empty) {
-                super.updateItem(date, empty);
-                setText(empty || date == null ? null : formatter.format(date));
-            }
-        });
-
-    }
-
+    // ====== Data load ======
     private void loadEmployeeData() {
         List<Employee> employeeList = employeeService.getAllEmployees();
-        ObservableList<Employee> observableList = FXCollections.observableArrayList(employeeList);
-        employeeTable.setItems(observableList);
+        employeeTable.setItems(FXCollections.observableArrayList(employeeList));
     }
 
     private void loadEmployeeStats() {
@@ -178,23 +178,48 @@ public class EmployeeController implements Initializable {
         departmentFilter.getItems().clear();
         departmentFilter.getItems().add("Tất cả");
         departmentFilter.getItems().addAll(departments);
+        departmentFilter.getSelectionModel().selectFirst();
     }
 
-    private void loadPositionFilter() {
+    private void loadPositionFilterAll() {
         List<String> positions = positionService.getAllPositionNames();
         positionFilter.getItems().clear();
         positionFilter.getItems().add("Tất cả");
         positionFilter.getItems().addAll(positions);
+        positionFilter.getSelectionModel().selectFirst();
     }
 
+    /**
+     * Quan trọng: Khi chọn phòng ban, combobox Chức vụ chỉ hiển thị position của phòng ban đó.
+     * Nếu phòng ban = "Tất cả" hoặc null => hiển thị tất cả chức vụ.
+     */
+    private void updatePositionFilterByDepartment() {
+        String deptName = departmentFilter.getValue();
+
+        positionFilter.getItems().clear();
+        positionFilter.getItems().add("Tất cả");
+
+        if (deptName != null && !"Tất cả".equals(deptName)) {
+            List<String> positionsOfDept = positionService.getPositionNamesByDepartment(deptName);
+            positionFilter.getItems().addAll(positionsOfDept);
+        } else {
+            // không chọn phòng ban -> giữ toàn bộ
+            positionFilter.getItems().addAll(positionService.getAllPositionNames());
+        }
+
+        // reset selection để tránh giữ giá trị cũ không còn trong danh sách
+        positionFilter.getSelectionModel().selectFirst();
+    }
+
+    // ====== Filtering ======
     private void filterEmployees() {
         String selectedDepartment = departmentFilter.getValue();
         String selectedPosition = positionFilter.getValue();
-
         List<Employee> filtered = employeeService.getFilteredEmployees(selectedDepartment, selectedPosition);
         employeeTable.setItems(FXCollections.observableArrayList(filtered));
     }
 
+    // ====== Actions ======
     @FXML
     private void handleAddEmployee(ActionEvent event) {
         try {
@@ -206,70 +231,69 @@ public class EmployeeController implements Initializable {
             stage.initModality(Modality.APPLICATION_MODAL);
             stage.showAndWait();
 
+            // reload sau khi thêm
             loadEmployeeData();
             loadEmployeeStats();
+            filterEmployees(); // áp lại filter đang chọn
         } catch (IOException e) {
             e.printStackTrace();
         }
     }
 
-    private void handleEdit(Employee employee) {
+    private void handleEdit(com.model.Employee employee) {
         try {
-            FXMLLoader loader = new FXMLLoader(getClass().getResource("/com/view/add_employee.fxml"));
-            Parent root = loader.load();
+            // Lấy lại dữ liệu đầy đủ từ DB theo id để đảm bảo đủ field
+            com.model.Employee fresh = employeeService.getEmployeeById(employee.getId());
 
-            AddEmployeeController controller = loader.getController();
-            controller.setEmployeeToEdit(employee);
+            javafx.fxml.FXMLLoader loader = new javafx.fxml.FXMLLoader(
+                    getClass().getResource("/com/view/add_employee.fxml"));
+            javafx.scene.Parent root = loader.load();
+            com.controller.AddEmployeeController controller = loader.getController();
+            controller.setEmployeeToEdit(fresh != null ? fresh : employee);
 
-            Stage stage = new Stage();
-            stage.setScene(new Scene(root));
+            javafx.stage.Stage stage = new javafx.stage.Stage();
             stage.setTitle("Chỉnh sửa nhân viên");
-            stage.initModality(Modality.APPLICATION_MODAL);
+            stage.setScene(new javafx.scene.Scene(root));
+            stage.initModality(javafx.stage.Modality.APPLICATION_MODAL);
             stage.showAndWait();
 
             loadEmployeeData();
             loadEmployeeStats();
-        } catch (IOException e) {
+            filterEmployees();
+        } catch (Exception e) {
             e.printStackTrace();
         }
     }
 
     private void handleDelete(Employee employee) {
-        Alert alert = new Alert(Alert.AlertType.CONFIRMATION);
-        alert.setTitle("Xác nhận xoá");
-        alert.setHeaderText(null);
-        alert.setContentText("Bạn có chắc chắn muốn xoá nhân viên " + employee.getFullName() + " không?");
-
-        Optional<ButtonType> result = alert.showAndWait();
+        Alert confirm = new Alert(Alert.AlertType.CONFIRMATION);
+        confirm.setTitle("Xác nhận xoá");
+        confirm.setHeaderText(null);
+        confirm.setContentText("Bạn có chắc muốn xoá nhân viên: " + employee.getFullName() + " ?");
+        Optional<ButtonType> result = confirm.showAndWait();
         if (result.isPresent() && result.get() == ButtonType.OK) {
-            employeeService.deleteEmployee(employee.getId());
+            // Nếu đã có service xoá mềm: employeeService.softDeleteEmployee(employee.getId());
+            // Tạm thời chỉ refresh danh sách để giữ an toàn.
             loadEmployeeData();
             loadEmployeeStats();
+            filterEmployees();
         }
     }
 
+    // Hover style cho nút thêm (theo FXML hiện tại có gán onMouseEntered/Exited)
     @FXML
-    private void onHoverAdd() {
-        btnAddEmployee.setStyle("-fx-background-color: #2980b9; -fx-text-fill: white; -fx-padding: 10 20; -fx-background-radius: 5; -fx-cursor: hand;");
+    private void onHoverAdd(MouseEvent e) {
+        btnAddEmployee.setStyle("-fx-background-color:#2980b9; -fx-text-fill:white;");
     }
-
     @FXML
-    private void onExitAdd() {
-        btnAddEmployee.setStyle("-fx-background-color: #3498db; -fx-text-fill: white; -fx-padding: 10 20; -fx-background-radius: 5; -fx-cursor: hand;");
+    private void onExitAdd(MouseEvent e) {
+        btnAddEmployee.setStyle("-fx-background-color:#3498db; -fx-text-fill:white;");
     }
 
-    private void showAlert(Alert.AlertType type, String title, String message) {
-        Alert alert = new Alert(type);
-        alert.setTitle(title);
-        alert.setHeaderText(null);
-        alert.setContentText(message);
-        alert.showAndWait();
-    }
-
+    // Dùng cho nơi khác gọi (nếu có)
     public void loadEmployeesByDepartment(int departmentId) {
         List<Employee> employees = employeeService.getEmployeesByDepartment(departmentId);
         ObservableList<Employee> employeeList = FXCollections.observableArrayList(employees);
         employeeTable.setItems(employeeList);
     }
-
 }
