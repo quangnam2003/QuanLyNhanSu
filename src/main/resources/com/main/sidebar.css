@@ -216,3 +216,17 @@
     -fx-background-color: #c0392b;
 }
 
+#btnAddEmployee {
+    -fx-background-color: #3498db;
+    -fx-text-fill: white;
+    -fx-padding: 10 20;
+    -fx-background-radius: 5;
+    -fx-cursor: hand;
+}
+#btnAddEmployee:hover {
+    -fx-background-color: #2980b9;
+}
+#btnAddEmployee:pressed {
+    -fx-background-color: #2573a6;
+}
+

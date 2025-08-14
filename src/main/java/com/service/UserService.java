@@ -127,14 +127,28 @@ public class UserService {
 
     /**
      * Xoá user theo id
+     * - Pre-check: nếu user là Admin cuối -> không cho xoá (trả false).
+     * - Trigger DB vẫn chặn như lớp bảo vệ cuối.
      */
     public boolean deleteUserById(int userId) {
         String sql = "DELETE FROM users WHERE id = ?";
-        try (Connection conn = DBUtil.getConnection();
-             PreparedStatement pstmt = conn.prepareStatement(sql)) {
-            pstmt.setInt(1, userId);
-            return pstmt.executeUpdate() > 0;
+        try (Connection conn = DBUtil.getConnection()) {
+            // PRE-CHECK: chặn xóa Admin cuối
+            if (isLastAdmin(conn, userId)) {
+                System.err.println("[BLOCK] Không thể xóa Admin cuối cùng.");
+                return false;
+            }
+
+            try (PreparedStatement pstmt = conn.prepareStatement(sql)) {
+                pstmt.setInt(1, userId);
+                return pstmt.executeUpdate() > 0;
+            }
         } catch (SQLException e) {
+            // Nếu rơi vào SIGNAL của trigger (SQLSTATE 45000 / errorCode 1644) cũng trả false
+            if ("45000".equals(e.getSQLState()) || e.getErrorCode() == 1644) {
+                System.err.println("[DB TRIGGER] " + e.getMessage());
+                return false;
+            }
             e.printStackTrace();
         }
         return false;
@@ -192,21 +206,46 @@ public class UserService {
         return false;
     }
 
+    /**
+     * Cập nhật user
+     * - Nếu đang là Admin và role mới không phải Admin, đồng thời đây là Admin cuối -> chặn (return false).
+     * - Vẫn bắt lỗi từ trigger DB để không văng stacktrace.
+     */
     public boolean updateUser(int id, String username, String password, int roleId) {
         StringBuilder sql = new StringBuilder("UPDATE users SET username = ?, role_id = ?");
         boolean hasPassword = password != null && !password.isEmpty();
         if (hasPassword) sql.append(", password = ?");
         sql.append(" WHERE id = ?");
 
-        try (Connection conn = DBUtil.getConnection();
-             PreparedStatement ps = conn.prepareStatement(sql.toString())) {
-            int idx = 1;
-            ps.setString(idx++, username);
-            ps.setInt(idx++, roleId);
-            if (hasPassword) ps.setString(idx++, password);
-            ps.setInt(idx, id);
-            return ps.executeUpdate() > 0;
+        try (Connection conn = DBUtil.getConnection()) {
+            // PRE-CHECK: nếu user là Admin cuối và role chọn mới != Admin -> chặn
+            Integer adminRoleId = getAdminRoleId(conn);
+            Integer currentRoleId = getUserRoleId(conn, id);
+
+            if (adminRoleId != null && currentRoleId != null) {
+                boolean isCurrentlyAdmin = currentRoleId.equals(adminRoleId);
+                boolean movingOutOfAdmin = roleId != adminRoleId;
+
+                if (isCurrentlyAdmin && movingOutOfAdmin && isLastAdmin(conn, id)) {
+                    System.err.println("[BLOCK] Không thể hạ cấp Admin cuối cùng.");
+                    return false;
+                }
+            }
+
+            try (PreparedStatement ps = conn.prepareStatement(sql.toString())) {
+                int idx = 1;
+                ps.setString(idx++, username);
+                ps.setInt(idx++, roleId);
+                if (hasPassword) ps.setString(idx++, password);
+                ps.setInt(idx, id);
+                return ps.executeUpdate() > 0;
+            }
         } catch (SQLException e) {
+            if ("45000".equals(e.getSQLState()) || e.getErrorCode() == 1644) {
+                // Đây là lỗi từ SIGNAL trigger – trả false để Controller hiển thị cảnh báo thân thiện
+                System.err.println("[DB TRIGGER] " + e.getMessage());
+                return false;
+            }
             e.printStackTrace();
         }
         return false;
@@ -226,6 +265,74 @@ public class UserService {
             }
         } catch (SQLException e) {
             e.printStackTrace();
+        }
+        return false;
+    }
+
+    // =========================
+    // Helpers (không đổi biến sẵn có)
+    // =========================
+
+    /** Lấy role_id hiện tại của user */
+    private Integer getUserRoleId(Connection conn, int userId) throws SQLException {
+        String sql = "SELECT role_id FROM users WHERE id = ?";
+        try (PreparedStatement ps = conn.prepareStatement(sql)) {
+            ps.setInt(1, userId);
+            try (ResultSet rs = ps.executeQuery()) {
+                if (rs.next()) return rs.getInt("role_id");
+            }
+        }
+        return null;
+    }
+
+    /** Lấy id của role ADMIN */
+    private Integer getAdminRoleId(Connection conn) throws SQLException {
+        String sql = "SELECT id FROM roles WHERE role_code = 'ADMIN' LIMIT 1";
+        try (PreparedStatement ps = conn.prepareStatement(sql);
+             ResultSet rs = ps.executeQuery()) {
+            if (rs.next()) return rs.getInt("id");
+        }
+        return null;
+    }
+
+    /** Đếm số Admin hiện có */
+    public int getAdminCount() {
+        String sql = "SELECT COUNT(*) AS total FROM users u " +
+                "JOIN roles r ON r.id = u.role_id " +
+                "WHERE r.role_code = 'ADMIN'";
+        try (Connection conn = DBUtil.getConnection();
+             PreparedStatement ps = conn.prepareStatement(sql);
+             ResultSet rs = ps.executeQuery()) {
+            if (rs.next()) return rs.getInt("total");
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+        return 0;
+    }
+
+    /** Kiểm tra user có phải Admin cuối cùng không */
+    private boolean isLastAdmin(Connection conn, int userId) throws SQLException {
+        String sqlUser = "SELECT r.role_code FROM users u " +
+                "JOIN roles r ON r.id = u.role_id WHERE u.id = ?";
+        try (PreparedStatement ps = conn.prepareStatement(sqlUser)) {
+            ps.setInt(1, userId);
+            try (ResultSet rs = ps.executeQuery()) {
+                if (rs.next()) {
+                    String code = rs.getString("role_code");
+                    if (!"ADMIN".equals(code)) return false; // Không phải admin thì khỏi check
+                } else {
+                    return false; // user không tồn tại
+                }
+            }
+        }
+
+        String sqlCount = "SELECT COUNT(*) AS total FROM users u " +
+                "JOIN roles r ON r.id = u.role_id WHERE r.role_code = 'ADMIN'";
+        try (PreparedStatement ps = conn.prepareStatement(sqlCount);
+             ResultSet rs = ps.executeQuery()) {
+            if (rs.next()) {
+                return rs.getInt("total") <= 1;
+            }
         }
         return false;
     }

@@ -141,6 +141,14 @@ public class SettingsController implements Initializable {
 
     private void handleDelete(User user) {
         if (user == null) return;
+
+        // UI pre-check: chặn xoá Admin cuối cùng
+        String roleCode = Optional.ofNullable(user.getRoleCode()).orElse("");
+        if ("ADMIN".equals(roleCode) && userService.getAdminCount() <= 1) {
+            showError("Không thể xoá Admin cuối cùng.");
+            return;
+        }
+
         Alert confirm = new Alert(Alert.AlertType.CONFIRMATION);
         confirm.setTitle("Xác nhận xoá");
         confirm.setHeaderText(null);
@@ -153,11 +161,7 @@ public class SettingsController implements Initializable {
                 loadUserStats();
                 applyFilters();
             } else {
-                Alert error = new Alert(Alert.AlertType.ERROR);
-                error.setTitle("Lỗi");
-                error.setHeaderText(null);
-                error.setContentText("Không thể xoá tài khoản.");
-                error.showAndWait();
+                showError("Không thể xoá tài khoản.");
             }
         }
     }
@@ -170,14 +174,14 @@ public class SettingsController implements Initializable {
 
         // Controls
         TextField txtUsername = new TextField();
-        PasswordField txtPassword = new PasswordField();
+        PasswordField txtPassword = new PasswordField();            // dùng khi THÊM
+        PasswordField txtConfirmPassword = new PasswordField();     // xác nhận mật khẩu khi THÊM
         ComboBox<Role> cbRole = new ComboBox<>();
         cbRole.getItems().setAll(userService.getRolesForUser());
 
         if (editing != null) {
             txtUsername.setText(editing.getUsername());
-            // Password để trống nếu không đổi
-            // Chọn role hiện tại
+            // chọn role hiện tại
             for (Role r : cbRole.getItems()) {
                 if (r.getId() == editing.getRoleId()) {
                     cbRole.getSelectionModel().select(r);
@@ -189,45 +193,79 @@ public class SettingsController implements Initializable {
         GridPane grid = new GridPane();
         grid.setHgap(10);
         grid.setVgap(10);
-        grid.addRow(0, new Label("Tài khoản:"), txtUsername);
-        grid.addRow(1, new Label(editing == null ? "Mật khẩu:" : "Mật khẩu (để trống nếu giữ nguyên):"), txtPassword);
-        grid.addRow(2, new Label("Vai trò:"), cbRole);
+
+        int row = 0;
+        grid.addRow(row++, new Label("Tài khoản:"), txtUsername);
+
+        // CHỈ hiển thị mật khẩu & xác nhận khi THÊM user
+        if (editing == null) {
+            grid.addRow(row++, new Label("Mật khẩu:"), txtPassword);
+            grid.addRow(row++, new Label("Xác nhận mật khẩu:"), txtConfirmPassword);
+        }
+
+        grid.addRow(row, new Label("Vai trò:"), cbRole);
         dialog.getDialogPane().setContent(grid);
 
         dialog.getDialogPane().getButtonTypes().addAll(ButtonType.OK, ButtonType.CANCEL);
 
-        // Validation on OK
+        // Validation on OK + UI pre-check hạ cấp Admin cuối
         Button okBtn = (Button) dialog.getDialogPane().lookupButton(ButtonType.OK);
         okBtn.addEventFilter(ActionEvent.ACTION, e -> {
             String username = txtUsername.getText().trim();
-            String password = txtPassword.getText();
+            String password = (editing == null) ? txtPassword.getText() : null; // chỉ check khi THÊM
+            String confirm  = (editing == null) ? txtConfirmPassword.getText() : null;
             Role role = cbRole.getValue();
 
             StringBuilder errors = new StringBuilder();
             if (username.isEmpty()) errors.append("- Vui lòng nhập tài khoản\n");
-            if (editing == null && (password == null || password.isEmpty())) errors.append("- Vui lòng nhập mật khẩu\n");
+
+            if (editing == null) {
+                if (password == null || password.isEmpty()) {
+                    errors.append("- Vui lòng nhập mật khẩu\n");
+                }
+                if (confirm == null || confirm.isEmpty()) {
+                    errors.append("- Vui lòng nhập xác nhận mật khẩu\n");
+                }
+                if (password != null && confirm != null && !password.equals(confirm)) {
+                    errors.append("- Mật khẩu và Xác nhận mật khẩu không trùng khớp\n");
+                }
+            }
+
             if (role == null) errors.append("- Vui lòng chọn vai trò\n");
             if (userService.isUsernameExists(username, editing == null ? null : editing.getId()))
                 errors.append("- Tài khoản đã tồn tại\n");
 
-            if (!errors.isEmpty()) {
+            // Chặn hạ cấp Admin cuối cùng ở UI (khi SỬA)
+            if (errors.length() == 0 && editing != null) {
+                String oldCode = Optional.ofNullable(editing.getRoleCode()).orElse("");
+                String newCode = role != null ? Optional.ofNullable(role.getRoleCode()).orElse("") : "";
+                if ("ADMIN".equals(oldCode) && !"ADMIN".equals(newCode)) {
+                    int adminCount = userService.getAdminCount();
+                    if (adminCount <= 1) {
+                        e.consume();
+                        showError("Không thể hạ cấp Admin cuối cùng.");
+                        return;
+                    }
+                }
+            }
+
+            if (errors.length() > 0) {
                 e.consume();
-                Alert a = new Alert(Alert.AlertType.ERROR, errors.toString(), ButtonType.OK);
-                a.showAndWait();
+                showError(errors.toString());
             }
         });
 
         Optional<ButtonType> res = dialog.showAndWait();
         if (res.isPresent() && res.get() == ButtonType.OK) {
             String username = txtUsername.getText().trim();
-            String password = txtPassword.getText();
+            String password = (editing == null) ? txtPassword.getText() : null; // khi sửa: truyền null
             Role role = cbRole.getValue();
 
             boolean ok;
             if (editing == null) {
                 ok = userService.addUser(username, password, role.getId());
             } else {
-                ok = userService.updateUser(editing.getId(), username, password, role.getId());
+                ok = userService.updateUser(editing.getId(), username, password, role.getId()); // password=null -> giữ nguyên
             }
 
             if (ok) {
@@ -235,10 +273,16 @@ public class SettingsController implements Initializable {
                 loadUserStats();
                 applyFilters();
             } else {
-                Alert error = new Alert(Alert.AlertType.ERROR, "Không thể lưu tài khoản", ButtonType.OK);
-                error.showAndWait();
+                showError("Không thể lưu tài khoản");
             }
         }
     }
-}
 
+    // Helper hiển thị lỗi
+    private void showError(String message) {
+        Alert a = new Alert(Alert.AlertType.ERROR);
+        a.setHeaderText(null);
+        a.setContentText(message);
+        a.showAndWait();
+    }
+}

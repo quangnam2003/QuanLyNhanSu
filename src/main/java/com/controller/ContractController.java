@@ -26,11 +26,15 @@ import java.io.IOException;
 import java.math.BigDecimal;
 import java.net.URL;
 import java.time.LocalDate;
+import java.time.format.DateTimeFormatter; // <<< THÊM
 import java.util.List;
 import java.util.Map;
 import java.util.ResourceBundle;
 
 public class ContractController implements Initializable {
+
+    // Formatter ngày dd/MM/yyyy
+    private static final DateTimeFormatter DATE_FMT = DateTimeFormatter.ofPattern("dd/MM/yyyy"); // <<< THÊM
 
     // Statistics Labels
     @FXML private Label activeContractsLabel;
@@ -100,16 +104,33 @@ public class ContractController implements Initializable {
             }
         });
         indexColumn.setSortable(false);
+
         // Set up table columns
         contractCodeColumn.setCellValueFactory(new PropertyValueFactory<>("contractNumber"));
         employeeNameColumn.setCellValueFactory(new PropertyValueFactory<>("employeeName"));
         contractTypeColumn.setCellValueFactory(new PropertyValueFactory<>("contractTypeName"));
+
+        // --- CỘT NGÀY: giữ nguyên value = LocalDate, chỉ custom CellFactory để format dd/MM/yyyy
         startDateColumn.setCellValueFactory(new PropertyValueFactory<>("startDate"));
+        startDateColumn.setCellFactory(col -> new TableCell<Contract, LocalDate>() { // <<< THÊM
+            @Override
+            protected void updateItem(LocalDate item, boolean empty) {
+                super.updateItem(item, empty);
+                setText(empty || item == null ? "" : DATE_FMT.format(item));
+            }
+        });
+
         endDateColumn.setCellValueFactory(new PropertyValueFactory<>("endDate"));
+        endDateColumn.setCellFactory(col -> new TableCell<Contract, LocalDate>() { // <<< THÊM
+            @Override
+            protected void updateItem(LocalDate item, boolean empty) {
+                super.updateItem(item, empty);
+                setText(empty || item == null ? "" : DATE_FMT.format(item));
+            }
+        });
 
         // THÊM MỚI: Setup cột người tạo hợp đồng
         createdByColumn.setCellValueFactory(new PropertyValueFactory<>("createdByUsername"));
-
 
         // Custom cell factory for salary column to format currency
         salaryColumn.setCellValueFactory(new PropertyValueFactory<>("salary"));
@@ -125,6 +146,7 @@ public class ContractController implements Initializable {
             }
         });
 
+        // (Giữ nguyên đoạn setCellFactory thứ 2 của salary nếu bạn đã dùng – nhưng 1 cái là đủ)
         salaryColumn.setCellFactory(column -> new TableCell<Contract, BigDecimal>() {
             @Override
             protected void updateItem(BigDecimal item, boolean empty) {
@@ -136,7 +158,6 @@ public class ContractController implements Initializable {
                 }
             }
         });
-
 
         // Custom cell factory for status column with colored indicators
         statusColumn.setCellValueFactory(cellData -> {
@@ -297,7 +318,6 @@ public class ContractController implements Initializable {
         probationContractsLabel.setText(String.valueOf(probation));
     }
 
-
     private void setupSearchAndFilter() {
         // Add listeners for real-time search and filter
         searchField.textProperty().addListener((observable, oldValue, newValue) -> {
@@ -334,6 +354,10 @@ public class ContractController implements Initializable {
         openAddContractWindow(null);
     }
 
+    private String fmt(LocalDate d) { // <<< THÊM: dùng cho dialog xem
+        return d == null ? "" : DATE_FMT.format(d);
+    }
+
     private void viewContract(Contract contract) {
         // Create a dialog to view contract details
         Dialog<Void> dialog = new Dialog<>();
@@ -345,8 +369,8 @@ public class ContractController implements Initializable {
         content.append("Mã hợp đồng: ").append(contract.getContractNumber()).append("\n");
         content.append("Nhân viên: ").append(contract.getEmployeeName()).append("\n");
         content.append("Loại hợp đồng: ").append(contract.getContractTypeName()).append("\n");
-        content.append("Ngày bắt đầu: ").append(contract.getStartDate()).append("\n");
-        content.append("Ngày kết thúc: ").append(contract.getEndDate() != null ? contract.getEndDate() : "Không xác định").append("\n");
+        content.append("Ngày bắt đầu: ").append(fmt(contract.getStartDate())).append("\n"); // <<< ĐÃ FORMAT
+        content.append("Ngày kết thúc: ").append(contract.getEndDate() != null ? fmt(contract.getEndDate()) : "Không xác định").append("\n"); // <<< ĐÃ FORMAT
         content.append("Mức lương: ").append(contract.getFormattedSalary()).append("\n");
         content.append("Phụ cấp: ").append(contract.getAllowances() != null ? String.format("%,.0f VND", contract.getAllowances()) : "0 VND").append("\n");
         content.append("Trạng thái: ").append(contract.getStatus()).append("\n");
@@ -414,195 +438,6 @@ public class ContractController implements Initializable {
             showErrorMessage("Không thể mở cửa sổ thêm hợp đồng!");
         }
     }
-
-//    private void showContractDialog(Contract contract) {
-//        Dialog<Contract> dialog = new Dialog<>();
-//        dialog.setTitle(contract == null ? "Tạo hợp đồng mới" : "Chỉnh sửa hợp đồng");
-//        dialog.setHeaderText(contract == null ? "Nhập thông tin hợp đồng mới" : "Chỉnh sửa thông tin hợp đồng");
-//
-//        // Create form fields
-//        GridPane grid = new GridPane();
-//        grid.setHgap(10);
-//        grid.setVgap(10);
-//        grid.setPadding(new javafx.geometry.Insets(20, 150, 10, 10));
-//
-//        TextField contractNumberField = new TextField();
-//        contractNumberField.setPromptText("Mã hợp đồng");
-//
-//        ComboBox<String> employeeComboBox = new ComboBox<>();
-//        loadEmployeesForComboBox(employeeComboBox);
-//
-//        ComboBox<String> contractTypeComboBoxDialog = new ComboBox<>();
-//        contractTypeComboBoxDialog.getItems().addAll(
-//                "Hợp đồng không xác định thời hạn",
-//                "Hợp đồng xác định thời hạn 1 năm",
-//                "Hợp đồng xác định thời hạn 2 năm",
-//                "Hợp đồng thời vụ",
-//                "Hợp đồng thử việc"
-//        );
-//
-//        DatePicker startDatePicker = new DatePicker();
-//        DatePicker endDatePicker = new DatePicker();
-//        TextField salaryField = new TextField();
-//        salaryField.setPromptText("Mức lương");
-//        TextField allowancesField = new TextField();
-//        allowancesField.setPromptText("Phụ cấp");
-//
-//        ComboBox<String> statusComboBoxDialog = new ComboBox<>();
-//
-//        DatePicker signedDatePicker = new DatePicker();
-//        TextArea benefitsArea = new TextArea();
-//        benefitsArea.setPromptText("Quyền lợi");
-//        benefitsArea.setPrefRowCount(3);
-//
-//        TextArea notesArea = new TextArea();
-//        notesArea.setPromptText("Ghi chú");
-//        notesArea.setPrefRowCount(3);
-//
-//        // Populate fields if editing
-//        if (contract != null) {
-//            contractNumberField.setText(contract.getContractNumber());
-//            employeeComboBox.setValue(contract.getEmployeeName());
-//            contractTypeComboBoxDialog.setValue(contract.getContractTypeName());
-//            startDatePicker.setValue(contract.getStartDate());
-//            endDatePicker.setValue(contract.getEndDate());
-//            if (contract.getSalary() != null) {
-//                salaryField.setText(contract.getSalary().toString());
-//            }
-//            if (contract.getAllowances() != null) {
-//                allowancesField.setText(contract.getAllowances().toString());
-//            }
-//            signedDatePicker.setValue(contract.getSignedDate());
-//            benefitsArea.setText(contract.getBenefits());
-//            notesArea.setText(contract.getNotes());
-//        } else {
-//            // Generate contract number for new contract
-//            contractNumberField.setText(contractService.generateContractNumber());
-//            statusComboBoxDialog.setValue("Đang hoạt động");
-//        }
-//
-//        // Add fields to grid
-//        grid.add(new Label("Mã hợp đồng:"), 0, 0);
-//        grid.add(contractNumberField, 1, 0);
-//        grid.add(new Label("Nhân viên:"), 0, 1);
-//        grid.add(employeeComboBox, 1, 1);
-//        grid.add(new Label("Loại hợp đồng:"), 0, 2);
-//        grid.add(contractTypeComboBoxDialog, 1, 2);
-//        grid.add(new Label("Ngày bắt đầu:"), 0, 3);
-//        grid.add(startDatePicker, 1, 3);
-//        grid.add(new Label("Ngày kết thúc:"), 0, 4);
-//        grid.add(endDatePicker, 1, 4);
-//        grid.add(new Label("Mức lương:"), 0, 5);
-//        grid.add(salaryField, 1, 5);
-//        grid.add(new Label("Phụ cấp:"), 0, 6);
-//        grid.add(allowancesField, 1, 6);
-//        grid.add(new Label("Ngày ký:"), 0, 8);
-//        grid.add(signedDatePicker, 1, 8);
-//        grid.add(new Label("Quyền lợi:"), 0, 9);
-//        grid.add(benefitsArea, 1, 9);
-//        grid.add(new Label("Ghi chú:"), 0, 10);
-//        grid.add(notesArea, 1, 10);
-//
-//        dialog.getDialogPane().setContent(grid);
-//
-//        ButtonType saveButtonType = new ButtonType("Lưu", ButtonBar.ButtonData.OK_DONE);
-//        dialog.getDialogPane().getButtonTypes().addAll(saveButtonType, ButtonType.CANCEL);
-//
-//        // Enable/disable save button based on required fields
-//        Node saveButton = dialog.getDialogPane().lookupButton(saveButtonType);
-//        saveButton.setDisable(true);
-//
-//        // Add validation
-//        contractNumberField.textProperty().addListener((observable, oldValue, newValue) -> {
-//            saveButton.setDisable(newValue.trim().isEmpty() || employeeComboBox.getValue() == null ||
-//                    contractTypeComboBoxDialog.getValue() == null || startDatePicker.getValue() == null);
-//        });
-//
-//        employeeComboBox.valueProperty().addListener((observable, oldValue, newValue) -> {
-//            saveButton.setDisable(contractNumberField.getText().trim().isEmpty() || newValue == null ||
-//                    contractTypeComboBoxDialog.getValue() == null || startDatePicker.getValue() == null);
-//        });
-//
-//        contractTypeComboBoxDialog.valueProperty().addListener((observable, oldValue, newValue) -> {
-//            saveButton.setDisable(contractNumberField.getText().trim().isEmpty() || employeeComboBox.getValue() == null ||
-//                    newValue == null || startDatePicker.getValue() == null);
-//        });
-//
-//        startDatePicker.valueProperty().addListener((observable, oldValue, newValue) -> {
-//            saveButton.setDisable(contractNumberField.getText().trim().isEmpty() || employeeComboBox.getValue() == null ||
-//                    contractTypeComboBoxDialog.getValue() == null || newValue == null);
-//        });
-//
-//        // Convert the result when save button is clicked
-//        dialog.setResultConverter(dialogButton -> {
-//            if (dialogButton == saveButtonType) {
-//                Contract newContract = contract != null ? contract : new Contract();
-//
-//                newContract.setContractNumber(contractNumberField.getText().trim());
-//
-//                // Get employee ID from name
-//                String selectedEmployeeName = employeeComboBox.getValue();
-//                int employeeId = getEmployeeIdByName(selectedEmployeeName);
-//                newContract.setEmployeeId(employeeId);
-//                newContract.setEmployeeName(selectedEmployeeName);
-//
-//                // Get contract type ID from name
-//                String selectedContractType = contractTypeComboBoxDialog.getValue();
-//                int contractTypeId = getContractTypeIdByName(selectedContractType);
-//                newContract.setContractTypeId(contractTypeId);
-//                newContract.setContractTypeName(selectedContractType);
-//
-//                newContract.setStartDate(startDatePicker.getValue());
-//                newContract.setEndDate(endDatePicker.getValue());
-//
-//                try {
-//                    if (!salaryField.getText().trim().isEmpty()) {
-//                        newContract.setSalary(new BigDecimal(salaryField.getText().trim()));
-//                    }
-//                    if (!allowancesField.getText().trim().isEmpty()) {
-//                        newContract.setAllowances(new BigDecimal(allowancesField.getText().trim()));
-//                    }
-//                } catch (NumberFormatException e) {
-//                    showErrorMessage("Vui lòng nhập số hợp lệ cho lương và phụ cấp!");
-//                    return null;
-//                }
-//
-//                newContract.setSignedDate(signedDatePicker.getValue());
-//                newContract.setBenefits(benefitsArea.getText().trim());
-//                newContract.setNotes(notesArea.getText().trim());
-//
-//                // Set created_by (you should get this from current user session)
-//                newContract.setCreatedBy(1); // Placeholder - replace with actual user ID
-//
-//                return newContract;
-//            }
-//            return null;
-//        });
-//
-//        dialog.showAndWait().ifPresent(result -> {
-//            if (result != null) {
-//                boolean success;
-//                if (contract == null) {
-//                    success = contractService.addContract(result);
-//                    if (success) {
-//                        showSuccessMessage("Tạo hợp đồng thành công!");
-//                    }
-//                } else {
-//                    success = contractService.updateContract(result);
-//                    if (success) {
-//                        showSuccessMessage("Cập nhật hợp đồng thành công!");
-//                    }
-//                }
-//
-//                if (success) {
-//                    loadContractData();
-//                    loadStatistics();
-//                } else {
-//                    showErrorMessage("Có lỗi xảy ra khi lưu hợp đồng!");
-//                }
-//            }
-//        });
-//    }
 
     // Fixed method: Compatible with Employee model structure
     private void loadEmployeesForComboBox(ComboBox<String> comboBox) {

@@ -62,6 +62,26 @@ public class EmployeeController implements Initializable {
     private final DepartmentService departmentService = new DepartmentService();
     private final PositionService positionService = new PositionService();
 
+    // ===== Button Styles (giữ dáng khi hover) =====
+    private static final String ADD_BTN_BASE_STYLE =
+            "-fx-background-color:#3498db; -fx-text-fill:white; -fx-padding:10 20; -fx-background-radius:5; -fx-cursor:hand;";
+    private static final String ADD_BTN_HOVER_STYLE =
+            "-fx-background-color:#2980b9; -fx-text-fill:white; -fx-padding:10 20; -fx-background-radius:5; -fx-cursor:hand;";
+
+    private static final String EDIT_BASE_STYLE =
+            "-fx-background-color:#3498db; -fx-text-fill:white; -fx-padding:4 10; -fx-background-radius:5; -fx-cursor:hand;";
+    private static final String EDIT_HOVER_STYLE =
+            "-fx-background-color:#2f89d6; -fx-text-fill:white; -fx-padding:4 10; -fx-background-radius:5; -fx-cursor:hand;";
+    private static final String EDIT_PRESSED_STYLE =
+            "-fx-background-color:#2874bf; -fx-text-fill:white; -fx-padding:4 10; -fx-background-radius:5; -fx-cursor:hand;";
+
+    private static final String DELETE_BASE_STYLE =
+            "-fx-background-color:#e74c3c; -fx-text-fill:white; -fx-padding:4 10; -fx-background-radius:5; -fx-cursor:hand;";
+    private static final String DELETE_HOVER_STYLE =
+            "-fx-background-color:#cf4436; -fx-text-fill:white; -fx-padding:4 10; -fx-background-radius:5; -fx-cursor:hand;";
+    private static final String DELETE_PRESSED_STYLE =
+            "-fx-background-color:#b93a2e; -fx-text-fill:white; -fx-padding:4 10; -fx-background-radius:5; -fx-cursor:hand;";
+
     @Override
     public void initialize(URL location, ResourceBundle resources) {
         setupTableColumns();
@@ -71,13 +91,13 @@ public class EmployeeController implements Initializable {
         loadEmployeeStats();
 
         // Load dropdowns
-        loadDepartmentFilter();         // gồm "Tất cả"
-        loadPositionFilterAll();        // gồm "Tất cả"
+        loadDepartmentFilter();          // gồm "Tất cả"
+        loadPositionFilterAll();         // gồm "Tất cả"
         updatePositionFilterByDepartment(); // đồng bộ lần đầu
 
         // Sự kiện filter:
         departmentFilter.setOnAction(e -> {
-            updatePositionFilterByDepartment(); // <<<< chỉ lấy position theo phòng ban
+            updatePositionFilterByDepartment();
             filterEmployees();
         });
         positionFilter.setOnAction(e -> filterEmployees());
@@ -91,6 +111,8 @@ public class EmployeeController implements Initializable {
                 employeeTable.setItems(FXCollections.observableArrayList(results));
             }
         });
+
+        if (btnAddEmployee != null) btnAddEmployee.setStyle(ADD_BTN_BASE_STYLE);
     }
 
     // ====== Table setup ======
@@ -135,6 +157,23 @@ public class EmployeeController implements Initializable {
                     {
                         hBox.setAlignment(Pos.CENTER);
 
+                        // Style mặc định
+                        btnEdit.setStyle(EDIT_BASE_STYLE);
+                        btnDelete.setStyle(DELETE_BASE_STYLE);
+
+                        // Hover/Pessed cho Sửa
+                        btnEdit.setOnMouseEntered(e -> btnEdit.setStyle(EDIT_HOVER_STYLE));
+                        btnEdit.setOnMouseExited(e -> btnEdit.setStyle(EDIT_BASE_STYLE));
+                        btnEdit.setOnMousePressed(e -> btnEdit.setStyle(EDIT_PRESSED_STYLE));
+                        btnEdit.setOnMouseReleased(e -> btnEdit.setStyle(EDIT_HOVER_STYLE));
+
+                        // Hover/Pessed cho Xoá
+                        btnDelete.setOnMouseEntered(e -> btnDelete.setStyle(DELETE_HOVER_STYLE));
+                        btnDelete.setOnMouseExited(e -> btnDelete.setStyle(DELETE_BASE_STYLE));
+                        btnDelete.setOnMousePressed(e -> btnDelete.setStyle(DELETE_PRESSED_STYLE));
+                        btnDelete.setOnMouseReleased(e -> btnDelete.setStyle(DELETE_HOVER_STYLE));
+
+                        // Hành động
                         btnEdit.setOnAction(e -> {
                             Employee employee = getTableView().getItems().get(getIndex());
                             handleEdit(employee);
@@ -144,10 +183,6 @@ public class EmployeeController implements Initializable {
                             Employee employee = getTableView().getItems().get(getIndex());
                             handleDelete(employee);
                         });
-
-                        // style nhẹ
-                        btnEdit.setStyle("-fx-background-color:#3498db;-fx-text-fill:white;");
-                        btnDelete.setStyle("-fx-background-color:#e74c3c;-fx-text-fill:white;");
                     }
 
                     @Override
@@ -190,8 +225,7 @@ public class EmployeeController implements Initializable {
     }
 
     /**
-     * Quan trọng: Khi chọn phòng ban, combobox Chức vụ chỉ hiển thị position của phòng ban đó.
-     * Nếu phòng ban = "Tất cả" hoặc null => hiển thị tất cả chức vụ.
+     * Khi chọn phòng ban, combobox Chức vụ chỉ hiển thị position của phòng ban đó.
      */
     private void updatePositionFilterByDepartment() {
         String deptName = departmentFilter.getValue();
@@ -203,11 +237,9 @@ public class EmployeeController implements Initializable {
             List<String> positionsOfDept = positionService.getPositionNamesByDepartment(deptName);
             positionFilter.getItems().addAll(positionsOfDept);
         } else {
-            // không chọn phòng ban -> giữ toàn bộ
             positionFilter.getItems().addAll(positionService.getAllPositionNames());
         }
 
-        // reset selection để tránh giữ giá trị cũ không còn trong danh sách
         positionFilter.getSelectionModel().selectFirst();
     }
 
@@ -242,19 +274,17 @@ public class EmployeeController implements Initializable {
 
     private void handleEdit(com.model.Employee employee) {
         try {
-            // Lấy lại dữ liệu đầy đủ từ DB theo id để đảm bảo đủ field
             com.model.Employee fresh = employeeService.getEmployeeById(employee.getId());
 
-            javafx.fxml.FXMLLoader loader = new javafx.fxml.FXMLLoader(
-                    getClass().getResource("/com/view/add_employee.fxml"));
-            javafx.scene.Parent root = loader.load();
+            FXMLLoader loader = new FXMLLoader(getClass().getResource("/com/view/add_employee.fxml"));
+            Parent root = loader.load();
             com.controller.AddEmployeeController controller = loader.getController();
             controller.setEmployeeToEdit(fresh != null ? fresh : employee);
 
-            javafx.stage.Stage stage = new javafx.stage.Stage();
+            Stage stage = new Stage();
             stage.setTitle("Chỉnh sửa nhân viên");
-            stage.setScene(new javafx.scene.Scene(root));
-            stage.initModality(javafx.stage.Modality.APPLICATION_MODAL);
+            stage.setScene(new Scene(root));
+            stage.initModality(Modality.APPLICATION_MODAL);
             stage.showAndWait();
 
             loadEmployeeData();
@@ -272,22 +302,22 @@ public class EmployeeController implements Initializable {
         confirm.setContentText("Bạn có chắc muốn xoá nhân viên: " + employee.getFullName() + " ?");
         Optional<ButtonType> result = confirm.showAndWait();
         if (result.isPresent() && result.get() == ButtonType.OK) {
-            // Nếu đã có service xoá mềm: employeeService.softDeleteEmployee(employee.getId());
-            // Tạm thời chỉ refresh danh sách để giữ an toàn.
+            // Nếu có xoá mềm thì gọi service; tạm thời refresh.
             loadEmployeeData();
             loadEmployeeStats();
             filterEmployees();
         }
     }
 
-    // Hover style cho nút thêm (theo FXML hiện tại có gán onMouseEntered/Exited)
+    // ====== Hover style cho nút Thêm ======
     @FXML
     private void onHoverAdd(MouseEvent e) {
-        btnAddEmployee.setStyle("-fx-background-color:#2980b9; -fx-text-fill:white;");
+        btnAddEmployee.setStyle(ADD_BTN_HOVER_STYLE);
     }
+
     @FXML
     private void onExitAdd(MouseEvent e) {
-        btnAddEmployee.setStyle("-fx-background-color:#3498db; -fx-text-fill:white;");
+        btnAddEmployee.setStyle(ADD_BTN_BASE_STYLE);
     }
 
     // Dùng cho nơi khác gọi (nếu có)
